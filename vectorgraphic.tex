@@ -12,11 +12,11 @@
 \begin{document}
 
 \begin{vectorgraphic}
-    \draw (0,0) -- (0cm,1cm) .. (1cm,1cm) .. (1cm,2cm) -- (1.5cm,2.5cm) -- (1cm,0cm) ! ;
+    \path[stroke, stroke color=blue] (0,0) -- (0cm,1cm) .. (1cm,1cm) .. (1cm,2cm) -- (1.5cm,2.5cm) -- (1cm,0cm) ! ;
 \end{vectorgraphic}
 
 \begin{vectorgraphic}
-    \draw (0,0) -- (0cm,1cm) .. (1cm,1cm) & (1cm,2cm) .. (2cm,2cm) -- (3cm,2.5cm) -- (2cm,0cm) ! ;
+    \path[fill, fill color=red] (0,0) -- (0cm,1cm) .. (1cm,1cm) & (1cm,2cm) .. (2cm,2cm) -- (3cm,2.5cm) -- (2cm,0cm) ! ;
 \end{vectorgraphic}
 
 \end{document}

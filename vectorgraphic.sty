@@ -43,7 +43,83 @@
 % [ > [...] = keys
 % § > node [...] {}
 
-\cs_new:Npn \vectorgraphic_parse_coordinate:Nn #1#2 {
+% rectangle, circle, ellipse, arc commands
+
+\clist_new:N \l_vectorgraphic_path_use_clist
+\str_new:N \l_vectorgraphic_path_stroke_color_str
+\str_new:N \l_vectorgraphic_path_fill_color_str
+\fp_new:N \l_vectorgraphic_path_stroke_opacity_fp
+\fp_new:N \l_vectorgraphic_path_fill_opacity_fp
+\dim_new:N \l_vectorgraphic_path_linewidth_dim
+
+\str_new:N \l_vectorgraphic_path_cap_str
+\str_new:N \l_vectorgraphic_path_join_str
+\fp_new:N \l_vectorgraphic_path_miterlimit_fp
+
+\cs_generate_variant:Nn \color_select:n { V }
+\cs_generate_variant:Nn \opacity_select:n { V }
+\cs_generate_variant:Nn \draw_set_linewidth:n { V }
+\cs_generate_variant:Nn \draw_set_miterlimit:n { V }
+\cs_generate_variant:Nn \draw_path_use_clear:n { e }
+
+\keys_define:nn { vectorgraphic / path } {
+    stroke                  .code:n     = {
+        \clist_put_right:Nn \l_vectorgraphic_path_use_clist { stroke }
+    } ,
+    fill                    .code:n     = {
+        \clist_put_right:Nn \l_vectorgraphic_path_use_clist { fill }
+    } ,
+    clip                    .code:n     = {
+        \clist_put_right:Nn \l_vectorgraphic_path_use_clist { clip }
+    } ,
+    stroke ~ color          .str_set:N  = \l_vectorgraphic_path_stroke_color_str ,
+    stroke ~ color          .initial:n  = { . } ,
+    fill ~ color            .str_set:N  = \l_vectorgraphic_path_fill_color_str ,
+    fill ~ color            .initial:n  = { . } ,
+    stroke ~ opacity        .fp_set:N   = \l_vectorgraphic_path_stroke_opacity_fp ,
+    stroke ~ opacity        .initial:n  = { 1 } ,
+    fill ~ opacity          .fp_set:N   = \l_vectorgraphic_path_fill_opacity_fp ,
+    fill ~ opacity          .initial:n  = { 1 } ,
+    line ~ width            .dim_set:N  = \l_vectorgraphic_path_linewidth_dim ,
+    line ~ width            .initial:n  = { \l_draw_default_linewidth_dim } ,
+    line ~ cap              .choice: ,
+    line ~ cap / butt       .code:n     = {
+        \str_set:Nn \l_vectorgraphic_path_cap_str { butt }
+    } ,
+    line ~ cap / round      .code:n     = {
+        \str_set:Nn \l_vectorgraphic_path_cap_str { round }
+    } ,
+    line ~ cap / rectangle  .code:n     = {
+        \str_set:Nn \l_vectorgraphic_path_cap_str { rectangle }
+    } ,
+    line ~ join             .choice: ,
+    line ~ join / miter     .code:n     = {
+        \str_set:Nn \l_vectorgraphic_path_join_str { miter }
+    } ,
+    line ~ join / round     .code:n     = {
+        \str_set:Nn \l_vectorgraphic_path_join_str { round }
+    } ,
+    line ~ join / bevel     .code:n     = {
+        \str_set:Nn \l_vectorgraphic_path_join_str { bevel }
+    } ,
+    line ~ cap              .initial:n  = { butt } ,
+    line ~ join             .initial:n  = { miter } ,
+    miter ~ limit           .fp_set:N   = \l_vectorgraphic_path_miterlimit_fp ,
+    miter ~ limit           .initial:n  = { 10 } ,
+}
+
+\cs_new_protected:Npn \vectorgraphic_set_path_options: {
+    \color_select:V \l_vectorgraphic_path_stroke_color_str
+    \color_select:V \l_vectorgraphic_path_fill_color_str
+    \opacity_select:V \l_vectorgraphic_path_stroke_opacity_fp
+    \opacity_select:V \l_vectorgraphic_path_fill_opacity_fp
+    \draw_set_linewidth:V \l_vectorgraphic_path_linewidth_dim
+    \draw_set_miterlimit:V\l_vectorgraphic_path_miterlimit_fp
+    \use:c { draw_set_cap_ \l_vectorgraphic_path_cap_str : }
+    \use:c { draw_set_join_ \l_vectorgraphic_path_join_str : }
+}
+
+\cs_new_protected:Npn \vectorgraphic_parse_coordinate:Nn #1#2 {
     \tl_if_in:nnTF {#2} { : } {
         \tl_set:Nn #1 {
             \vectorgraphic_parse_coordinate_polar:w #2 \q_stop
@@ -52,22 +128,23 @@
         \tl_set:Nn #1 {#2}
     }
 }
-\cs_new:Npn \vectorgraphic_parse_coordinate_polar:w #1 : #2 \q_stop {
+\cs_new_protected:Npn \vectorgraphic_parse_coordinate_polar:w #1 : #2 \q_stop {
     \draw_point_polar:nn {#2} {#1}
 }
 
 \tl_new:N \l_vectorgraphic_coordinate_a_tl
 \tl_new:N \l_vectorgraphic_coordinate_b_tl
 \tl_new:N \l_vectorgraphic_last_coordinate_tl
-\cs_new:Npn \vectorgraphic_path:w #1 ; {
+\cs_new_protected:Npn \vectorgraphic_path:w #1 ; {
     \tl_set:Nn \l_vectorgraphic_coordinate_a_tl { 0 , 0 }
     \tl_set:Nn \l_vectorgraphic_coordinate_b_tl { 0 , 0 }
     \tl_set:Nn \l_vectorgraphic_last_coordinate_tl { 0 , 0 }
-    \vectorgraphic_process_path:w #1 \q_stop
-    \draw_path_use_clear:n { stroke }
+    \vectorgraphic_set_path_options:
+    \tl_trim_spaces_apply:nN {#1} \vectorgraphic_process_path:n
+    \draw_path_use_clear:e { \clist_use:N \l_vectorgraphic_path_use_clist }
 }
 
-\cs_new:Npn \vectorgraphic_process_path:w #1 \q_stop {
+\cs_new_protected:Npn \vectorgraphic_process_path:n #1 {
     \tl_set_eq:NN \l_vectorgraphic_last_coordinate_tl \l_vectorgraphic_coordinate_a_tl
     \cs_if_exist_use:cT {
         vectorgraphic_process_path_ \tl_head:n {#1} :w 
@@ -76,52 +153,62 @@
     }
 }
 
-\cs_new:cpn { vectorgraphic_process_path_ ( :w } ( #1 ) #2 \q_stop {
+\cs_new_protected:Npn \vectorgraphic_continue_path:n #1 {
+    \tl_if_blank:nF {#1} {
+        \vectorgraphic_process_path:n {#1}
+    }
+}
+
+\cs_new_protected:cpn { vectorgraphic_process_path_ [ :w } [ #1 ] #2 \q_stop {
+    \keys_set:nn { vectorgraphic / path } {#1}
+    \vectorgraphic_set_path_options:
+    \tl_trim_spaces_apply:nN {#2} \vectorgraphic_continue_path:n
+}
+
+\cs_new_protected:cpn { vectorgraphic_process_path_ ( :w } ( #1 ) #2 \q_stop {
     \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
     \draw_path_moveto:n {
         \l_vectorgraphic_coordinate_a_tl
     }
-    \tl_if_blank:nF {#2} {
-        \vectorgraphic_process_path:w #2 \q_stop
-    }
+    \tl_trim_spaces_apply:nN {#2} \vectorgraphic_continue_path:n
 }
 
-\cs_new:cpn { vectorgraphic_process_path_ - :w } -- ( #1 ) #2 \q_stop {
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
+\cs_new_protected:cpn { vectorgraphic_process_path_ - :w } -- #1 ( #2 ) #3 \q_stop {
+    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#2}
     \draw_path_lineto:n {
         \l_vectorgraphic_coordinate_a_tl
     }
-    \tl_if_blank:nF {#2} {
-        \vectorgraphic_process_path:w #2 \q_stop
-    }
+    \tl_trim_spaces_apply:nN {#3} \vectorgraphic_continue_path:n
 }
 
-\cs_new:cpn { vectorgraphic_process_path_ . :w } .. ( #1 ) #2 \q_stop {
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
+\cs_new:Npn \vectorgraphic_process_curve_path:n #1 {
     \cs_if_exist_use:cT {
-        vectorgraphic_process_path_curve_ \tl_head:n {#2} :w 
+        vectorgraphic_process_path_curve_ \tl_head:n {#1} :w 
     } {
-        #2 \q_stop
+        #1 \q_stop
     }
 }
 
-\cs_new:cpn { vectorgraphic_process_path_curve_ . :w } .. ( #1 ) #2 \q_stop {
+\cs_new_protected:cpn { vectorgraphic_process_path_ . :w } .. #1 ( #2 ) #3 \q_stop {
+    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#2}
+     \tl_trim_spaces_apply:nN {#3} \vectorgraphic_process_curve_path:n
+}
+
+\cs_new_protected:cpn { vectorgraphic_process_path_curve_ . :w } .. #1 ( #2 ) #3 \q_stop {
     \tl_set_eq:NN \l_vectorgraphic_last_coordinate_tl \l_vectorgraphic_coordinate_a_tl
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
+    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#2}
     \draw_path_curveto:nn {
         \l_vectorgraphic_last_coordinate_tl
     } {
         \l_vectorgraphic_coordinate_a_tl
     }
-    \tl_if_blank:nF {#2} {
-        \vectorgraphic_process_path:w #2 \q_stop
-    }
+    \tl_trim_spaces_apply:nN {#3} \vectorgraphic_continue_path:n
 }
 
-\cs_new:cpn { vectorgraphic_process_path_curve_ & :w } & ( #1 ) .. ( #2 ) #3 \q_stop {
+\cs_new_protected:cpn { vectorgraphic_process_path_curve_ & :w } & #1 ( #2 ) #3 .. #4 ( #5 ) #6 \q_stop {
     \tl_set_eq:NN \l_vectorgraphic_last_coordinate_tl \l_vectorgraphic_coordinate_a_tl
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_b_tl {#2}
+    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#2}
+    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_b_tl {#5}
     \draw_path_curveto:nnn {
         \l_vectorgraphic_last_coordinate_tl
     } {
@@ -129,23 +216,18 @@
     } {
         \l_vectorgraphic_coordinate_b_tl
     }
-    \tl_if_blank:nF {#3} {
-        \vectorgraphic_process_path:w #3 \q_stop
-    }
+    \tl_trim_spaces_apply:nN {#6} \vectorgraphic_continue_path:n
 }
 
-\cs_new:cpn { vectorgraphic_process_path_ ! :w } ! #1 \q_stop {
+\cs_new_protected:cpn { vectorgraphic_process_path_ ! :w } ! #1 \q_stop {
     \draw_path_close:
-    \tl_if_blank:nF {#1} {
-        \vectorgraphic_process_path:w #1 \q_stop
-    }
+    \tl_trim_spaces_apply:nN {#1} \vectorgraphic_continue_path:n
 }
 
 % ===
 
 \NewDocumentEnvironment { vectorgraphic } { } {
-    \char_set_catcode_ignore:n { 32 }
-    \cs_set_eq:NN \draw \vectorgraphic_path:w
+    \cs_set_eq:NN \path \vectorgraphic_path:w
     \draw_begin:
 } {
     \draw_end:
