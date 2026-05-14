@@ -6,3 +6,7 @@ The package intends to define a set of user-level commands that can be used for 
 
 > [!CAUTION]
 > The code in this repository is experimental and as such may be subject to fundamental and frequent changes. Use it at your own risk.
+
+---
+
+This package including all files is subject to the LPPL 1.3c license. Copyright 2026 Jasper Habicht (mail(at)jasperhabicht.de).
