@@ -1,124 +1,5 @@
 \documentclass{article}
-\usepackage{l3draw}
-
-\ExplSyntaxOn
-\cs_new:Npn \vectorgraphic_parse_coordinate:Nn #1#2 {
-    \tl_if_in:nnTF {#2} { : } {
-        \tl_set:Nn #1 {
-            \vectorgraphic_parse_coordinate_polar:w #2 \q_stop
-        }
-    } {
-        \tl_set:Nn #1 {#2}
-    }
-}
-\cs_new:Npn \vectorgraphic_parse_coordinate_polar:w #1 : #2 \q_stop {
-    \draw_point_polar:nn {#2} {#1}
-}
-
-\tl_new:N \l_vectorgraphic_coordinate_a_tl
-\tl_new:N \l_vectorgraphic_coordinate_b_tl
-\tl_new:N \l_vectorgraphic_last_coordinate_tl
-\cs_new:Npn \vectorgraphic_path:w #1 ; {
-    \tl_set:Nn \l_vectorgraphic_coordinate_a_tl { 0 , 0 }
-    \tl_set:Nn \l_vectorgraphic_coordinate_b_tl { 0 , 0 }
-    \tl_set:Nn \l_vectorgraphic_last_coordinate_tl { 0 , 0 }
-    \vectorgraphic_process_path:w #1 \q_stop
-    \draw_path_use_clear:n { stroke }
-}
-
-\cs_new:Npn \vectorgraphic_process_path:w #1 \q_stop {
-    \tl_set_eq:NN \l_vectorgraphic_last_coordinate_tl \l_vectorgraphic_coordinate_a_tl
-    \cs_if_exist_use:cT {
-        vectorgraphic_process_path_ \tl_head:n {#1} :w 
-    } {
-        #1 \q_stop
-    }
-}
-
-\cs_new:cpn { vectorgraphic_process_path_ ( :w } ( #1 ) #2 \q_stop {
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
-    \draw_path_moveto:n {
-        \l_vectorgraphic_coordinate_a_tl
-    }
-    \tl_if_blank:nF {#2} {
-        \vectorgraphic_process_path:w #2 \q_stop
-    }
-}
-
-\cs_new:cpn { vectorgraphic_process_path_ - :w } -- ( #1 ) #2 \q_stop {
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
-    \draw_path_lineto:n {
-        \l_vectorgraphic_coordinate_a_tl
-    }
-    \tl_if_blank:nF {#2} {
-        \vectorgraphic_process_path:w #2 \q_stop
-    }
-}
-
-\cs_new:cpn { vectorgraphic_process_path_ . :w } .. ( #1 ) #2 \q_stop {
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
-    \cs_if_exist_use:cT {
-        vectorgraphic_process_path_curve_ \tl_head:n {#2} :w 
-    } {
-        #2 \q_stop
-    }
-}
-
-\cs_new:cpn { vectorgraphic_process_path_curve_ . :w } .. ( #1 ) #2 \q_stop {
-    \tl_set_eq:NN \l_vectorgraphic_last_coordinate_tl \l_vectorgraphic_coordinate_a_tl
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
-    \draw_path_curveto:nn {
-        \l_vectorgraphic_last_coordinate_tl
-    } {
-        \l_vectorgraphic_coordinate_a_tl
-    }
-    \tl_if_blank:nF {#2} {
-        \vectorgraphic_process_path:w #2 \q_stop
-    }
-}
-
-\cs_new:cpn { vectorgraphic_process_path_curve_ & :w } & ( #1 ) .. ( #2 ) #3 \q_stop {
-    \tl_set_eq:NN \l_vectorgraphic_last_coordinate_tl \l_vectorgraphic_coordinate_a_tl
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_a_tl {#1}
-    \vectorgraphic_parse_coordinate:Nn \l_vectorgraphic_coordinate_b_tl {#2}
-    \draw_path_curveto:nnn {
-        \l_vectorgraphic_last_coordinate_tl
-    } {
-        \l_vectorgraphic_coordinate_a_tl
-    } {
-        \l_vectorgraphic_coordinate_b_tl
-    }
-    \tl_if_blank:nF {#3} {
-        \vectorgraphic_process_path:w #3 \q_stop
-    }
-}
-
-\cs_new:cpn { vectorgraphic_process_path_ ! :w } ! #1 \q_stop {
-    \draw_path_close:
-    \tl_if_blank:nF {#1} {
-        \vectorgraphic_process_path:w #1 \q_stop
-    }
-}
-
-\ExplSyntaxOff
-
-% already working:
-% ( > (...) = coordinate
-% ! > close path
-% - > 
-    % -- > lineto:n
-% . >
-    % .. >
-        % .. > curveto:nm
-        % & (...) .. > curveto:nnn
-
-% to do:
-% [ > [...] = keys
-% § > node [...] {}
-
-\begin{document}%
-
-\ExplSyntaxOn
+\usepackage{vectorgraphic}
 
 % syntax cheatsheet:
 % (<a>,<b>) > coordinate with x and y parts
@@ -128,14 +9,14 @@
 % .. (<a>,<b>) & (<c>,<d>) .. (<e>,<f>) > draw a curve to the next coordinate with two control points
 % ! > close the path
 
-\draw_begin:
-    \vectorgraphic_path:w (0,0) -- (0cm,1cm) .. (1cm,1cm) .. (1cm,2cm) -- (1.5cm,2.5cm) -- (1cm,0cm) ! ;
-\draw_end:
+\begin{document}
 
-\draw_begin:
-    \vectorgraphic_path:w (0,0) -- (0cm,1cm) .. (1cm,1cm) & (1cm,2cm) .. (2cm,2cm) -- (3cm,2.5cm) -- (2cm,0cm) ! ;
-\draw_end:
+\begin{vectorgraphic}
+    \draw (0,0) -- (0cm,1cm) .. (1cm,1cm) .. (1cm,2cm) -- (1.5cm,2.5cm) -- (1cm,0cm) ! ;
+\end{vectorgraphic}
 
-\ExplSyntaxOff
+\begin{vectorgraphic}
+    \draw (0,0) -- (0cm,1cm) .. (1cm,1cm) & (1cm,2cm) .. (2cm,2cm) -- (3cm,2.5cm) -- (2cm,0cm) ! ;
+\end{vectorgraphic}
 
 \end{document}
