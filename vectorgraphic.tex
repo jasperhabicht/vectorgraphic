@@ -3,12 +3,22 @@
 
 % syntax cheatsheet:
 % [<options>] > set options for the path (can be used after every coordinate)
+
 % (<a>,<b>) > coordinate with x and y parts
 % (<a>:<b>) > coordinate with angle and radius parts
-% -- (<a>,<b>) > draw a line to the next coordinate
-% .. (<a>,<b>) .. (<c>,<d>) > draw a curve to the next coordinate with single control point
-% .. (<a>,<b>) & (<c>,<d>) .. (<e>,<f>) > draw a curve to the next coordinate with two control points
+
+% -- (<coordinate>) > draw a line to the next coordinate
+% |- (<coordinate>) > draw a vertical, then horizontal line to the next coordinate
+% -| (<coordinate>) > draw a horizontal, then vertical line to the next coordinate
+% .. (<coordinate>) .. (<coordinate>) > draw a curve to the next coordinate with single control point
+% .. (<coordinate>) & (<coordinate>) .. (<coordinate>) > draw a curve to the next coordinate with two control points
 % ! > close the path
+
+% circle[<options>] > draw a circle with the current coordinate as center and options (radius) as parameters
+% ellipse[<options>] > draw an ellipse with the current coordinate as center and options (vector a, vector b) as parameters
+% arc[<options>] > draw an arc with the current coordinate as origin and options (radius a, radius b, vector a, vector b, start angle, end angle) as parameters
+% rectangle[<options>] > draw a rectangle with the current coordinate as origin corner and options (corner, relative) as parameters
+% grid[<options>] > draw a grid with the current coordinate as origin corner and options (step [tuple], corner) as parameters
 
 \begin{document}
 
