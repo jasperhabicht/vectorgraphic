@@ -29,24 +29,10 @@
 
 \RequirePackage { l3draw }
 
-% already working:
-% ( > (...) = coordinate
-% ! > close path
-% - > 
-    % -- > lineto:n
-% . >
-    % .. >
-        % .. > curveto:nm
-        % & (...) .. > curveto:nnn
-
-% to do:
-% [ > [...] = keys
 % § > node [...] {}
-
 % + > relative coordinates
-% | > orthogonal coordinates
 
-% rectangle, circle, ellipse, arc commands
+\clist_new:N \l__vectorgraphic_keys_unprocessed_clist
 
 \clist_new:N \l_vectorgraphic_path_use_clist
 \str_new:N \l_vectorgraphic_path_stroke_color_str
@@ -59,20 +45,40 @@
 \str_new:N \l_vectorgraphic_path_join_str
 \fp_new:N \l_vectorgraphic_path_miterlimit_fp
 \clist_new:N \l_vectorgraphic_path_corner_arc_clist
+\str_new:N \l_vectorgraphic_path_fill_rule_str
+
+\clist_new:N \l_vectorgraphic_path_dash_pattern_clist
+\dim_new:N \l_vectorgraphic_path_dash_phase_dim
 
 \fp_new:N \l_vectorgraphic_last_coordinate_fp
 \fp_new:N \l__vectorgraphic_coordinate_a_fp
 \fp_new:N \l__vectorgraphic_coordinate_b_fp
 
+\str_new:N \l_vectorgraphic_scope_layer_str
+
 \cs_generate_variant:Nn \color_select:n { V }
 \cs_generate_variant:Nn \opacity_select:n { V }
 \cs_generate_variant:Nn \draw_set_linewidth:n { V }
 \cs_generate_variant:Nn \draw_set_miterlimit:n { V }
+\cs_generate_variant:Nn \draw_set_dash_pattern:nn { VV }
 \cs_generate_variant:Nn \draw_path_corner_arc:nn { ee }
 \cs_generate_variant:Nn \draw_path_use_clear:n { e }
+\cs_generate_variant:Nn \draw_layer_begin:n { V }
 
 \keys_define:nn { vectorgraphic / env } {
     baseline                .code:n         = { \draw_set_baseline:n {#1} } ,
+    layers                  .code:n         = {
+        \clist_map_inline:nn {#1} {
+            \clist_if_in:NnF \l_draw_layers_clist {##1} {
+                \draw_layer_new:n {##1}
+            }
+        }
+        \clist_set:Nn \l_draw_layers_clist {#1}
+    }
+}
+
+\keys_define:nn { vectorgraphic / scope } {
+    layer                   .str_set:N      = \l_vectorgraphic_scope_layer_str ,
 }
 
 \keys_define:nn { vectorgraphic / path } {
@@ -121,6 +127,18 @@
     miter ~ limit           .initial:n      = { 10 } ,
     corner ~ arc            .clist_set:N    = \l_vectorgraphic_path_corner_arc_clist ,
     corner ~ arc            .initial:n      = { 0pt } ,
+    fill ~ rule             .choice: ,
+    fill ~ rule / even ~ odd .code:n        = {
+        \str_set:Nn \l_vectorgraphic_path_fill_rule_str { evenodd }
+    } ,
+    fill ~ rule / non-zero  .code:n         = {
+        \str_set:Nn \l_vectorgraphic_path_fill_rule_str { nonzero }
+    } ,
+    fill ~ rule             .initial:n      = { non-zero } ,
+    dash ~ pattern          .clist_set:N    = \l_vectorgraphic_path_dash_pattern_clist ,
+    dash ~ pattern          .initial:n      = { } ,
+    dash ~ phase            .dim_set:N      = \l_vectorgraphic_path_dash_phase_dim ,
+    dash ~ phase            .initial:n      = { 0pt } ,
 }
 
 \cs_new:Npn \__vectorgraphic_fp_tuple_use_i:w ( #1 , #2 ) {#1}
@@ -163,6 +181,9 @@
             \clist_item:Nn \l_vectorgraphic_path_corner_arc_clist { 1 }
         }
     }
+    \use:c { draw_set_ \l_vectorgraphic_path_fill_rule_str _rule: }
+    \draw_set_dash_pattern:VV \l_vectorgraphic_path_dash_pattern_clist
+        \l_vectorgraphic_path_dash_phase_dim
 }
 
 \cs_new_protected:Npn \vectorgraphic_parse_coordinate:Nn #1#2 {
@@ -578,12 +599,21 @@
     \cs_set_eq:NN \node \vectorgraphic_node:w
     \NewDocumentEnvironment { scope } { O{} } {
         \draw_scope_begin:
-            \keys_set:nn { vectorgraphic / path } {##1}
+            \keys_set_known:nnN { vectorgraphic / scope } {##1}
+                \l__vectorgraphic_keys_unprocessed_clist
+            \keys_set:nV { vectorgraphic / path } \l__vectorgraphic_keys_unprocessed_clist
+            \str_if_empty:NF \l_vectorgraphic_scope_layer_str {
+                \draw_layer_begin:V \l_vectorgraphic_scope_layer_str
+            }
     } {
+            \str_if_empty:NF \l_vectorgraphic_scope_layer_str {
+                \draw_layer_end:
+            }
         \draw_scope_end:
     }
-    \keys_set:nn { vectorgraphic / env } {#1}
-    \keys_set:nn { vectorgraphic / path } {#1}
+    \keys_set_known:nnN { vectorgraphic / env } {#1}
+        \l__vectorgraphic_keys_unprocessed_clist
+    \keys_set:nV { vectorgraphic / path } \l__vectorgraphic_keys_unprocessed_clist
     \draw_begin:
 } {
     \draw_end:
