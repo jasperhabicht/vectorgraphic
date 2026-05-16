@@ -29,8 +29,35 @@
 
 \RequirePackage { l3draw }
 
-% § > node [...] {}
-% + > relative coordinates
+% ===
+
+\IfExplAtLeastTF { 2025-04-14 } { } {
+    \RequirePackage { l3opacity }
+}
+
+% backward compatibility
+\cs_if_exist:NF \draw_set_linewidth:n {
+    \cs_set_eq:NN \draw_set_linewidth:n \draw_linewidth:n
+}
+\cs_if_exist:NF \draw_set_baseline:n {
+    \cs_set_eq:NN \draw_set_baseline:n \draw_baseline:n
+}
+\cs_if_exist:NF \draw_set_cap_round: {
+    \cs_set_eq:NN \draw_set_cap_round: \draw_cap_round:
+}
+\cs_if_exist:NF \draw_set_join_round: {
+    \cs_set_eq:NN \draw_set_join_round: \draw_join_round:
+}
+\IfExplAtLeastTF { 2026-04-28 } { } {
+    \cs_set_eq:NN \__vectorgraphic_compat_draw_path_arc:nnnn \draw_path_arc:nnnn
+    \cs_set_protected:Npn \draw_path_arc:nnnn #1#2#3#4 {
+        \__vectorgraphic_compat_draw_path_arc:nnnn {#3} {#4} {#1} {#2}
+    }
+    \cs_set_protected:Npn \draw_path_arc:nnn #1#2#3 {
+        \__vectorgraphic_compat_draw_path_arc:nnnn {#2} {#3} {#1} {#1}
+    }
+}
+% ===
 
 \clist_new:N \l__vectorgraphic_keys_unprocessed_clist
 
@@ -50,6 +77,7 @@
 \clist_new:N \l_vectorgraphic_path_dash_pattern_clist
 \dim_new:N \l_vectorgraphic_path_dash_phase_dim
 
+\fp_new:N \l_vectorgraphic_first_coordinate_fp
 \fp_new:N \l_vectorgraphic_last_coordinate_fp
 \fp_new:N \l__vectorgraphic_coordinate_a_fp
 \fp_new:N \l__vectorgraphic_coordinate_b_fp
@@ -202,6 +230,7 @@
 \cs_new_protected:Npn \vectorgraphic_path:w #1 ; {
     \fp_set:Nn \l__vectorgraphic_coordinate_a_fp { ( 0pt , 0pt ) }
     \fp_set:Nn \l__vectorgraphic_coordinate_b_fp { ( 0pt , 0pt ) }
+    \fp_set:Nn \l_vectorgraphic_first_coordinate_fp { ( 0pt , 0pt ) }
     \fp_set:Nn \l_vectorgraphic_last_coordinate_fp { ( 0pt , 0pt ) }
     \vectorgraphic_set_path_options:
     \tl_trim_spaces_apply:nN {#1} \__vectorgraphic_process_path:n
@@ -209,7 +238,6 @@
 }
 
 \cs_new_protected:Npn \__vectorgraphic_process_path:n #1 {
-    \fp_set_eq:NN \l_vectorgraphic_last_coordinate_fp \l__vectorgraphic_coordinate_a_fp
     \cs_if_exist_use:cT {
         __vectorgraphic_process_path_ \tl_head:n {#1} :w 
     } {
@@ -234,6 +262,7 @@
     \draw_path_moveto:n {
         \l__vectorgraphic_coordinate_a_fp
     }
+    \fp_set_eq:NN \l_vectorgraphic_first_coordinate_fp \l__vectorgraphic_coordinate_a_fp
     \fp_set_eq:NN \l_vectorgraphic_last_coordinate_fp \l__vectorgraphic_coordinate_a_fp
     \tl_trim_spaces_apply:nN {#2} \__vectorgraphic_continue_path:n
 }
@@ -344,6 +373,7 @@
 
 \cs_new_protected:cpn { __vectorgraphic_process_path_ ! :w } ! #1 \q_stop {
     \draw_path_close:
+    \fp_set_eq:NN \l_vectorgraphic_last_coordinate_fp \l_vectorgraphic_first_coordinate_fp
     \tl_trim_spaces_apply:nN {#1} \__vectorgraphic_continue_path:n
 }
 
@@ -360,10 +390,9 @@
 
 \cs_new_protected:cpn { __vectorgraphic_process_path_ c :w } circle #1 [ #2 ] #3 \q_stop {
     \keys_set:nn { vectorgraphic / path / circle } {#2}
-    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
     \draw_path_circle:VV \l_vectorgraphic_last_coordinate_fp
         \l_vectorgraphic_path_circle_radius_dim
-    \tl_trim_spaces_apply:nN {#1} \__vectorgraphic_continue_path:n
+    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
 }
 
 \fp_new:N \l_vectorgraphic_path_ellipse_vector_a_fp
@@ -380,11 +409,10 @@
 
 \cs_new_protected:cpn { __vectorgraphic_process_path_ e :w } ellipse #1 [ #2 ] #3 \q_stop {
     \keys_set:nn { vectorgraphic / path / ellipse } {#2}
-    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
     \draw_path_ellipse:VVV \l_vectorgraphic_last_coordinate_fp
         \l_vectorgraphic_path_ellipse_vector_a_fp
         \l_vectorgraphic_path_ellipse_vector_b_fp
-    \tl_trim_spaces_apply:nN {#1} \__vectorgraphic_continue_path:n
+    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
 }
 
 \bool_new:N \l_vectorgraphic_path_arc_axes_bool
@@ -429,23 +457,21 @@
 }
 
 \cs_new_protected:cpn { __vectorgraphic_process_path_ a :w } arc #1 [ #2 ] #3 \q_stop {
-    \keys_set:nn { vectorgraphic / path / circle } {#2}
-    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
+    \keys_set:nn { vectorgraphic / path / arc } {#2}
     \bool_if:NTF \l_vectorgraphic_path_arc_axes_bool {
-        \draw_path_arc_axes:VVVV \l_vectorgraphic_last_coordinate_fp
-            \l_vectorgraphic_path_arc_vector_a_fp
+        \draw_path_arc_axes:VVVV \l_vectorgraphic_path_arc_vector_a_fp
             \l_vectorgraphic_path_arc_vector_b_fp
             \l_vectorgraphic_path_arc_angle_start_fp
             \l_vectorgraphic_path_arc_angle_end_fp
     } {
-         \draw_path_arc:VVVV \l_vectorgraphic_last_coordinate_fp
-            \l_vectorgraphic_path_arc_radius_a_dim
+         \draw_path_arc:VVVV \l_vectorgraphic_path_arc_radius_a_dim
             \l_vectorgraphic_path_arc_radius_b_dim
             \l_vectorgraphic_path_arc_angle_start_fp
             \l_vectorgraphic_path_arc_angle_end_fp
     }
-    %\fp_set_eq:NN \l_vectorgraphic_last_coordinate_fp \l__vectorgraphic_coordinate_b_fp
-    \tl_trim_spaces_apply:nN {#1} \__vectorgraphic_continue_path:n
+    % better not use internal variables here, but we need to update the last coordinate
+    \fp_set:Nn \l_vectorgraphic_last_coordinate_fp { ( \g__draw_path_lastx_dim , \g__draw_path_lasty_dim ) }
+    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
 }
 
 \bool_new:N \l_vectorgraphic_path_rectangle_relative_bool
@@ -464,7 +490,6 @@
 
 \cs_new_protected:cpn { __vectorgraphic_process_path_ r :w } rectangle #1 [ #2 ] #3 \q_stop {
     \keys_set:nn { vectorgraphic / path / rectangle } {#2}
-    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
     \bool_if:NTF \l_vectorgraphic_path_rectangle_relative_bool {
         \draw_path_rectangle:VV \l_vectorgraphic_last_coordinate_fp
             \l_vectorgraphic_path_rectangle_corner_fp
@@ -476,13 +501,13 @@
             \l_vectorgraphic_path_rectangle_corner_fp
         \fp_set_eq:NN \l_vectorgraphic_last_coordinate_fp \l_vectorgraphic_path_rectangle_corner_fp
     }
-    \tl_trim_spaces_apply:nN {#1} \__vectorgraphic_continue_path:n
+    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
 }
 
 \clist_new:N \l_vectorgraphic_path_grid_step_clist
 \fp_new:N \l_vectorgraphic_path_grid_corner_fp
 
-\cs_generate_variant:Nn \draw_path_grid:nnnn { VVVV }
+\cs_generate_variant:Nn \draw_path_grid:nnnn { eeVV }
 
 \keys_define:nn { vectorgraphic / path / grid } {
     step                    .clist_set:N    = \l_vectorgraphic_path_grid_step_clist ,
@@ -493,7 +518,6 @@
 
 \cs_new_protected:cpn { __vectorgraphic_process_path_ g :w } grid #1 [ #2 ] #3 \q_stop {
     \keys_set:nn { vectorgraphic / path / grid } {#2}
-    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
     \int_compare:nNnTF { \clist_count:N \l_vectorgraphic_path_grid_step_clist } > { 1 } {
         \draw_path_grid:eeVV {
             \clist_item:Nn \l_vectorgraphic_path_grid_step_clist { 1 }
@@ -512,12 +536,10 @@
             \l_vectorgraphic_path_grid_corner_fp
     }
     \fp_set_eq:NN \l_vectorgraphic_last_coordinate_fp \l_vectorgraphic_path_grid_corner_fp
-    \tl_trim_spaces_apply:nN {#1} \__vectorgraphic_continue_path:n
+    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
 }
 
 % ===
-
-\if_false: % node code is not ready yet
 
 \bool_new:N \l__vectorgraphic_node_vbox_bool
 \coffin_new:N \l_vectorgraphic_node_coffin
@@ -543,47 +565,41 @@
     height                  .initial:n      = { 0pt } ,
 }
 
-\cs_new_protected:Npn \vectorgraphic_node:w #1 #2 #3 \q_stop {
+\cs_new_protected:cpn { __vectorgraphic_process_path_ n :w } node #1#2 \q_stop {
+    \tl_if_head_eq_meaning:nNTF {#1} [ {
+        \__vectorgraphic_process_node_options:w #1#2 \q_stop
+    } {
+        \vectorgraphic_process_node:nn { } {#1}
+        \tl_trim_spaces_apply:nN {#2} \__vectorgraphic_continue_path:n
+    }
+}
+
+\cs_new_protected:Npn \__vectorgraphic_process_node_options:w [ #1 ] #2#3 \q_stop {
+    \vectorgraphic_process_node:nn {#1} {#2}
+    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
+}
+
+\cs_new_protected:Npn \vectorgraphic_process_node:nn #1#2 {
     \group_begin:
-        %\tl_trim_spaces_apply:nN {#1} \__vectorgraphic_process_node_options:n
+        \keys_set:nn { vectorgraphic / node } {#1}
         \bool_if:NTF \l__vectorgraphic_node_vbox_bool {
             \vcoffin_set:Nnn \l_vectorgraphic_node_coffin {
                 \l_vectorgraphic_node_width_dim
             } {
-                \normalfont #3
+                \normalfont #2
             }
         } {
             \hcoffin_set:Nn \l_vectorgraphic_node_coffin{
-                \normalfont #3
+                \normalfont #2
             }
         }
-        \hcoffin
         \draw_coffin_use:NeeV \l_vectorgraphic_node_coffin {
             \clist_item:Nn \l_vectorgraphic_node_anchor_clist { 1 }
         } {
             \clist_item:Nn \l_vectorgraphic_node_anchor_clist { 2 }
         } \l_vectorgraphic_last_coordinate_fp
     \group_end:
-    \tl_trim_spaces_apply:nN {#3} \__vectorgraphic_continue_path:n
 }
-
-\cs_new_protected:cpn { __vectorgraphic_process_path_ § :w } #1 #2 \q_stop {
-    \keys_set:nn { vectorgraphic / path } {#1}
-    \vectorgraphic_set_path_options:
-    \tl_trim_spaces_apply:nN {#2} \__vectorgraphic_continue_path:n
-}
-
-\cs_new_protected:cpn \__vectorgraphic_process_node_options:n #1 {
-    \tl_if_head_eq_meaning:nNT {#1} [ {
-        \__vectorgraphic_process_node_options:w #1 \q_stop
-    }
-}
-
-\cs_new_protected:cpn \__vectorgraphic_process_node_options:w [ #1 ] \q_stop {
-    \keys_set:nn { vectorgraphic / node } {#1}
-}
-
-\fi:
 
 % ===
 
@@ -596,7 +612,7 @@
     \cs_set_eq:NN \path \vectorgraphic_path:w
     \cs_set:Npn \stroke { \path [ stroke ] }
     \cs_set:Npn \fill { \path [ fill ] }
-    \cs_set_eq:NN \node \vectorgraphic_node:w
+    \cs_set:Npn \node { \path ( 0pt, 0pt ) node }
     \NewDocumentEnvironment { scope } { O{} } {
         \draw_scope_begin:
             \keys_set_known:nnN { vectorgraphic / scope } {##1}
