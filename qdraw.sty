@@ -1,0 +1,638 @@
+% File: qdraw.sty
+% Copyright 2026 Jasper Habicht (mail(at)jasperhabicht.de).
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License version 1.3c,
+% available at http://www.latex-project.org/lppl/.
+%
+% This file is part of the `qdraw' package (The Work in LPPL)
+% and all files in that bundle must be distributed together.
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+\ProvidesExplPackage {qdraw} {2026-05-14} {0.0.1}
+  {An experimental package for drawing vector graphics with the l3draw package and a TikZ-like syntax.}
+
+\msg_new:nnn { qdraw } { old-kernel } {
+  LaTeX ~ kernel ~ too ~ old. \iow_newline:
+  The ~ qdraw ~ package ~ does ~ not ~ support ~ this ~ LaTeX ~ version. \iow_newline:
+  Please ~ update ~ to ~ a ~ newer ~ version.
+}
+
+\cs_if_exist:NF \ProcessKeyOptions {
+  \msg_critical:nn { qdraw } { old-kernel }
+}
+
+% ===
+
+\ProcessKeyOptions [ ]
+
+\RequirePackage { l3draw }
+
+% ===
+
+\IfExplAtLeastTF { 2025-04-14 } { } {
+    \RequirePackage { l3opacity }
+}
+
+% backward compatibility
+\cs_if_exist:NF \draw_set_linewidth:n {
+    \cs_set_eq:NN \draw_set_linewidth:n \draw_linewidth:n
+}
+\cs_if_exist:NF \draw_set_baseline:n {
+    \cs_set_eq:NN \draw_set_baseline:n \draw_baseline:n
+}
+\cs_if_exist:NF \draw_set_cap_round: {
+    \cs_set_eq:NN \draw_set_cap_round: \draw_cap_round:
+}
+\cs_if_exist:NF \draw_set_join_round: {
+    \cs_set_eq:NN \draw_set_join_round: \draw_join_round:
+}
+\IfExplAtLeastTF { 2026-04-28 } { } {
+    \cs_set_eq:NN \__qdraw_compat_draw_path_arc:nnnn \draw_path_arc:nnnn
+    \cs_set_protected:Npn \draw_path_arc:nnnn #1#2#3#4 {
+        \__qdraw_compat_draw_path_arc:nnnn {#3} {#4} {#1} {#2}
+    }
+    \cs_set_protected:Npn \draw_path_arc:nnn #1#2#3 {
+        \__qdraw_compat_draw_path_arc:nnnn {#2} {#3} {#1} {#1}
+    }
+}
+% ===
+
+\clist_new:N \l__qdraw_keys_unprocessed_clist
+
+\clist_new:N \l_qdraw_path_use_clist
+\str_new:N \l_qdraw_path_stroke_color_str
+\str_new:N \l_qdraw_path_fill_color_str
+\fp_new:N \l_qdraw_path_stroke_opacity_fp
+\fp_new:N \l_qdraw_path_fill_opacity_fp
+\dim_new:N \l_qdraw_path_linewidth_dim
+
+\str_new:N \l_qdraw_path_cap_str
+\str_new:N \l_qdraw_path_join_str
+\fp_new:N \l_qdraw_path_miterlimit_fp
+\clist_new:N \l_qdraw_path_corner_arc_clist
+\str_new:N \l_qdraw_path_fill_rule_str
+
+\clist_new:N \l_qdraw_path_dash_pattern_clist
+\dim_new:N \l_qdraw_path_dash_phase_dim
+
+\fp_new:N \l_qdraw_first_coordinate_fp
+\fp_new:N \l_qdraw_last_coordinate_fp
+\fp_new:N \l__qdraw_coordinate_a_fp
+\fp_new:N \l__qdraw_coordinate_b_fp
+
+\str_new:N \l_qdraw_scope_layer_str
+
+\cs_generate_variant:Nn \color_select:n { V }
+\cs_generate_variant:Nn \opacity_select:n { V }
+\cs_generate_variant:Nn \draw_set_linewidth:n { V }
+\cs_generate_variant:Nn \draw_set_miterlimit:n { V }
+\cs_generate_variant:Nn \draw_set_dash_pattern:nn { VV }
+\cs_generate_variant:Nn \draw_path_corner_arc:nn { ee }
+\cs_generate_variant:Nn \draw_path_use_clear:n { e }
+\cs_generate_variant:Nn \draw_layer_begin:n { V }
+
+\keys_define:nn { qdraw / env } {
+    baseline                .code:n         = { \draw_set_baseline:n {#1} } ,
+    layers                  .code:n         = {
+        \clist_map_inline:nn {#1} {
+            \clist_if_in:NnF \l_draw_layers_clist {##1} {
+                \draw_layer_new:n {##1}
+            }
+        }
+        \clist_set:Nn \l_draw_layers_clist {#1}
+    }
+}
+
+\keys_define:nn { qdraw / scope } {
+    layer                   .str_set:N      = \l_qdraw_scope_layer_str ,
+}
+
+\keys_define:nn { qdraw / path } {
+    stroke                  .code:n         = {
+        \clist_put_right:Nn \l_qdraw_path_use_clist { stroke }
+    } ,
+    fill                    .code:n         = {
+        \clist_put_right:Nn \l_qdraw_path_use_clist { fill }
+    } ,
+    clip                    .code:n         = {
+        \clist_put_right:Nn \l_qdraw_path_use_clist { clip }
+    } ,
+    stroke ~ color          .str_set:N      = \l_qdraw_path_stroke_color_str ,
+    stroke ~ color          .initial:n      = { . } ,
+    fill ~ color            .str_set:N      = \l_qdraw_path_fill_color_str ,
+    fill ~ color            .initial:n      = { . } ,
+    stroke ~ opacity        .fp_set:N       = \l_qdraw_path_stroke_opacity_fp ,
+    stroke ~ opacity        .initial:n      = { 1 } ,
+    fill ~ opacity          .fp_set:N       = \l_qdraw_path_fill_opacity_fp ,
+    fill ~ opacity          .initial:n      = { 1 } ,
+    line ~ width            .dim_set:N      = \l_qdraw_path_linewidth_dim ,
+    line ~ width            .initial:n      = { \l_draw_default_linewidth_dim } ,
+    line ~ cap              .choice: ,
+    line ~ cap / butt       .code:n         = {
+        \str_set:Nn \l_qdraw_path_cap_str { butt }
+    } ,
+    line ~ cap / round      .code:n         = {
+        \str_set:Nn \l_qdraw_path_cap_str { round }
+    } ,
+    line ~ cap / rectangle  .code:n         = {
+        \str_set:Nn \l_qdraw_path_cap_str { rectangle }
+    } ,
+    line ~ cap              .initial:n      = { butt } ,
+    line ~ join             .choice: ,
+    line ~ join / miter     .code:n         = {
+        \str_set:Nn \l_qdraw_path_join_str { miter }
+    } ,
+    line ~ join / round     .code:n         = {
+        \str_set:Nn \l_qdraw_path_join_str { round }
+    } ,
+    line ~ join / bevel     .code:n         = {
+        \str_set:Nn \l_qdraw_path_join_str { bevel }
+    } ,
+    line ~ join             .initial:n      = { miter } ,
+    miter ~ limit           .fp_set:N       = \l_qdraw_path_miterlimit_fp ,
+    miter ~ limit           .initial:n      = { 10 } ,
+    corner ~ arc            .clist_set:N    = \l_qdraw_path_corner_arc_clist ,
+    corner ~ arc            .initial:n      = { 0pt } ,
+    fill ~ rule             .choice: ,
+    fill ~ rule / even ~ odd .code:n        = {
+        \str_set:Nn \l_qdraw_path_fill_rule_str { evenodd }
+    } ,
+    fill ~ rule / non-zero  .code:n         = {
+        \str_set:Nn \l_qdraw_path_fill_rule_str { nonzero }
+    } ,
+    fill ~ rule             .initial:n      = { non-zero } ,
+    dash ~ pattern          .clist_set:N    = \l_qdraw_path_dash_pattern_clist ,
+    dash ~ pattern          .initial:n      = { } ,
+    dash ~ phase            .dim_set:N      = \l_qdraw_path_dash_phase_dim ,
+    dash ~ phase            .initial:n      = { 0pt } ,
+}
+
+\cs_new:Npn \__qdraw_fp_tuple_use_i:w ( #1 , #2 ) {#1}
+\cs_new:Npn \qdraw_fp_tuple_use_i:n #1 {
+    \fp_to_dim:n {
+        \exp_last_unbraced:Ne
+            \__qdraw_fp_tuple_use_i:w { \fp_eval:n {#1} }
+    }
+}
+\cs_generate_variant:Nn \qdraw_fp_tuple_use_i:n { V }
+
+\cs_new:Npn \__qdraw_fp_tuple_use_ii:w ( #1 , #2 ) {#2}
+\cs_new:Npn \qdraw_fp_tuple_use_ii:n #1 {
+    \fp_to_dim:n {
+        \exp_last_unbraced:Ne
+            \__qdraw_fp_tuple_use_ii:w { \fp_eval:n {#1} }
+    }
+}
+\cs_generate_variant:Nn \qdraw_fp_tuple_use_ii:n { V }
+
+\cs_new_protected:Npn \qdraw_set_path_options: {
+    \color_select:V \l_qdraw_path_stroke_color_str
+    \color_select:V \l_qdraw_path_fill_color_str
+    \opacity_select:V \l_qdraw_path_stroke_opacity_fp
+    \opacity_select:V \l_qdraw_path_fill_opacity_fp
+    \draw_set_linewidth:V \l_qdraw_path_linewidth_dim
+    \draw_set_miterlimit:V\l_qdraw_path_miterlimit_fp
+    \use:c { draw_set_cap_ \l_qdraw_path_cap_str : }
+    \use:c { draw_set_join_ \l_qdraw_path_join_str : }
+    \int_compare:nNnTF { \clist_count:N \l_qdraw_path_corner_arc_clist } > { 1 } {
+        \draw_path_corner_arc:ee {
+            \clist_item:Nn \l_qdraw_path_corner_arc_clist { 1 }
+        } {
+            \clist_item:Nn \l_qdraw_path_corner_arc_clist { 2 }
+        }
+    } {
+        \draw_path_corner_arc:ee {
+            \clist_item:Nn \l_qdraw_path_corner_arc_clist { 1 }
+        } {
+            \clist_item:Nn \l_qdraw_path_corner_arc_clist { 1 }
+        }
+    }
+    \use:c { draw_set_ \l_qdraw_path_fill_rule_str _rule: }
+    \draw_set_dash_pattern:VV \l_qdraw_path_dash_pattern_clist
+        \l_qdraw_path_dash_phase_dim
+}
+
+\cs_new_protected:Npn \qdraw_parse_coordinate:Nn #1#2 {
+    \tl_if_in:nnTF {#2} { : } {
+        \fp_set:Nn #1 {
+            \qdraw_parse_coordinate_polar:w #2 \q_stop
+        }
+    } {
+        \fp_set:Nn #1 {#2}
+    }
+}
+\cs_new_protected:Npn \qdraw_parse_coordinate_polar:w #1 : #2 \q_stop {
+    \draw_point_polar:nn {#2} {#1}
+}
+
+\cs_new_protected:Npn \qdraw_path:w #1 ; {
+    \fp_set:Nn \l__qdraw_coordinate_a_fp { ( 0pt , 0pt ) }
+    \fp_set:Nn \l__qdraw_coordinate_b_fp { ( 0pt , 0pt ) }
+    \fp_set:Nn \l_qdraw_first_coordinate_fp { ( 0pt , 0pt ) }
+    \fp_set:Nn \l_qdraw_last_coordinate_fp { ( 0pt , 0pt ) }
+    \qdraw_set_path_options:
+    \tl_trim_spaces_apply:nN {#1} \__qdraw_process_path:n
+    \draw_path_use_clear:e { \clist_use:N \l_qdraw_path_use_clist }
+}
+
+\cs_new_protected:Npn \__qdraw_process_path:n #1 {
+    \cs_if_exist_use:cT {
+        __qdraw_process_path_ \tl_head:n {#1} :w 
+    } {
+        #1 \q_stop
+    }
+}
+
+\cs_new_protected:Npn \__qdraw_continue_path:n #1 {
+    \tl_if_blank:nF {#1} {
+        \__qdraw_process_path:n {#1}
+    }
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ [ :w } [ #1 ] #2 \q_stop {
+    \keys_set:nn { qdraw / path } {#1}
+    \qdraw_set_path_options:
+    \tl_trim_spaces_apply:nN {#2} \__qdraw_continue_path:n
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ ( :w } ( #1 ) #2 \q_stop {
+    \qdraw_parse_coordinate:Nn \l__qdraw_coordinate_a_fp {#1}
+    \draw_path_moveto:n {
+        \l__qdraw_coordinate_a_fp
+    }
+    \fp_set_eq:NN \l_qdraw_first_coordinate_fp \l__qdraw_coordinate_a_fp
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l__qdraw_coordinate_a_fp
+    \tl_trim_spaces_apply:nN {#2} \__qdraw_continue_path:n
+}
+
+% ===
+
+\cs_new:Npn \__qdraw_process_line_path:n #1 {
+    \cs_if_exist_use:cT {
+        __qdraw_process_path_line_ \tl_head:n {#1} :w 
+    } {
+        #1 \q_stop
+    }
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ - :w } - #1 \q_stop {
+    \tl_trim_spaces_apply:nN {#1} \__qdraw_process_line_path:n
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_line_ - :w } - #1 ( #2 ) #3 \q_stop {
+    % what do we do with #1?
+    \qdraw_parse_coordinate:Nn \l__qdraw_coordinate_a_fp {#2}
+    \draw_path_lineto:n {
+        \l__qdraw_coordinate_a_fp
+    }
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l__qdraw_coordinate_a_fp
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_line_ | :w } | #1 ( #2 ) #3 \q_stop {
+    % what do we do with #1?
+    \qdraw_parse_coordinate:Nn \l__qdraw_coordinate_a_fp {#2}
+    \draw_path_lineto:n {
+        (
+            \qdraw_fp_tuple_use_i:V \l__qdraw_coordinate_a_fp
+        ,
+            \qdraw_fp_tuple_use_ii:V \l_qdraw_last_coordinate_fp
+        )
+    }
+    \draw_path_lineto:n {
+        \l__qdraw_coordinate_a_fp
+    }
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l__qdraw_coordinate_a_fp
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+
+\cs_new_protected:cpn { __qdraw_process_path_ | :w } |- #1 ( #2 ) #3 \q_stop {
+    % what do we do with #1?
+    \qdraw_parse_coordinate:Nn \l__qdraw_coordinate_a_fp {#2}
+    \draw_path_lineto:n {
+        (
+            \qdraw_fp_tuple_use_i:V \l_qdraw_last_coordinate_fp
+        ,
+            \qdraw_fp_tuple_use_ii:V \l__qdraw_coordinate_a_fp
+        )
+    }
+    \draw_path_lineto:n {
+        \l__qdraw_coordinate_a_fp
+    }
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l__qdraw_coordinate_a_fp
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+% ===
+
+\cs_new:Npn \__qdraw_process_curve_path:n #1 {
+    \cs_if_exist_use:cT {
+        __qdraw_process_path_curve_ \tl_head:n {#1} :w 
+    } {
+        #1 \q_stop
+    }
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ . :w } .. #1 ( #2 ) #3 \q_stop {
+    % what do we do with #1?
+    \qdraw_parse_coordinate:Nn \l__qdraw_coordinate_a_fp {#2}
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_process_curve_path:n
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_curve_ . :w } .. #1 ( #2 ) #3 \q_stop {
+    % what do we do with #1?
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l__qdraw_coordinate_a_fp
+    \qdraw_parse_coordinate:Nn \l__qdraw_coordinate_a_fp {#2}
+    \draw_path_curveto:nn {
+        \l_qdraw_last_coordinate_fp
+    } {
+        \l__qdraw_coordinate_a_fp
+    }
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l__qdraw_coordinate_a_fp
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_curve_ & :w } & #1 ( #2 ) #3 .. #4 ( #5 ) #6 \q_stop {
+    % what do we do with #1, #3, #4?
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l__qdraw_coordinate_a_fp
+    \qdraw_parse_coordinate:Nn \l__qdraw_coordinate_a_fp {#2}
+    \qdraw_parse_coordinate:Nn \l__qdraw_coordinate_b_fp {#5}
+    \draw_path_curveto:nnn {
+        \l_qdraw_last_coordinate_fp
+    } {
+        \l__qdraw_coordinate_a_fp
+    } {
+        \l__qdraw_coordinate_b_fp
+    }
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l__qdraw_coordinate_b_fp
+    \tl_trim_spaces_apply:nN {#6} \__qdraw_continue_path:n
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ ! :w } ! #1 \q_stop {
+    \draw_path_close:
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l_qdraw_first_coordinate_fp
+    \tl_trim_spaces_apply:nN {#1} \__qdraw_continue_path:n
+}
+
+% ===
+
+\dim_new:N \l_qdraw_path_circle_radius_dim
+
+\cs_generate_variant:Nn \draw_path_circle:nn { VV }
+
+\keys_define:nn { qdraw / path / circle } {
+    radius                  .dim_set:N      = \l_qdraw_path_circle_radius_dim ,
+    radius                  .initial:n      = { 1cm } ,
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ c :w } circle #1 [ #2 ] #3 \q_stop {
+    \keys_set:nn { qdraw / path / circle } {#2}
+    \draw_path_circle:VV \l_qdraw_last_coordinate_fp
+        \l_qdraw_path_circle_radius_dim
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+\fp_new:N \l_qdraw_path_ellipse_vector_a_fp
+\fp_new:N \l_qdraw_path_ellipse_vector_b_fp
+
+\cs_generate_variant:Nn \draw_path_ellipse:nnn { VVV }
+
+\keys_define:nn { qdraw / path / ellipse } {
+    vector ~ a              .fp_set:N       = \l_qdraw_path_ellipse_vector_a_fp ,
+    vector ~ a              .initial:n      = { ( 1cm , 0pt ) } ,
+    vector ~ b              .fp_set:N       = \l_qdraw_path_ellipse_vector_b_fp ,
+    vector ~ b              .initial:n      = { ( 0pt , 1cm ) } ,
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ e :w } ellipse #1 [ #2 ] #3 \q_stop {
+    \keys_set:nn { qdraw / path / ellipse } {#2}
+    \draw_path_ellipse:VVV \l_qdraw_last_coordinate_fp
+        \l_qdraw_path_ellipse_vector_a_fp
+        \l_qdraw_path_ellipse_vector_b_fp
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+\bool_new:N \l_qdraw_path_arc_axes_bool
+\dim_new:N \l_qdraw_path_arc_radius_a_dim
+\dim_new:N \l_qdraw_path_arc_radius_b_dim
+\fp_new:N \l_qdraw_path_arc_vector_a_fp
+\fp_new:N \l_qdraw_path_arc_vector_b_fp
+\fp_new:N \l_qdraw_path_arc_angle_start_fp
+\fp_new:N \l_qdraw_path_arc_angle_end_fp
+
+\cs_generate_variant:Nn \draw_path_arc:nnnn { VVVV }
+\cs_generate_variant:Nn \draw_path_arc_axes:nnnn { VVVV }
+
+\keys_define:nn { qdraw / path / arc } {
+    radius ~ a              .code:n         = {
+        \bool_set_false:N \l_qdraw_path_arc_axes_bool
+        \dim_set:Nn \l_qdraw_path_arc_radius_a_dim {#1}
+    } ,
+    radius ~ a              .initial:n      = { 1cm } ,
+    radius ~ b              .code:n         = {
+        \bool_set_false:N \l_qdraw_path_arc_axes_bool
+        \dim_set:Nn \l_qdraw_path_arc_radius_b_dim {#1}
+    } ,
+    radius ~ b              .initial:n      = { 1cm } ,
+    radius                  .code:n         = {
+        \bool_set_false:N \l_qdraw_path_arc_axes_bool
+        \dim_set:Nn \l_qdraw_path_arc_radius_a_dim {#1}
+        \dim_set:Nn \l_qdraw_path_arc_radius_b_dim {#1}
+    } ,
+    vector ~ a              .code:n         = {
+        \bool_set_true:N \l_qdraw_path_arc_axes_bool
+        \fp_set:Nn \l_qdraw_path_arc_vector_a_fp {#1}
+    } ,
+    vector ~ b              .code:n         = {
+        \bool_set_true:N \l_qdraw_path_arc_axes_bool
+        \fp_set:Nn \l_qdraw_path_arc_vector_b_fp {#1}
+    } ,
+    angle ~ start           .fp_set:N       = \l_qdraw_path_arc_angle_start_fp ,
+    angle ~ start           .initial:n      = { 0 } ,
+    angle ~ end             .fp_set:N       = \l_qdraw_path_arc_angle_end_fp ,
+    angle ~ end             .initial:n      = { 90 } ,
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ a :w } arc #1 [ #2 ] #3 \q_stop {
+    \keys_set:nn { qdraw / path / arc } {#2}
+    \bool_if:NTF \l_qdraw_path_arc_axes_bool {
+        \draw_path_arc_axes:VVVV \l_qdraw_path_arc_vector_a_fp
+            \l_qdraw_path_arc_vector_b_fp
+            \l_qdraw_path_arc_angle_start_fp
+            \l_qdraw_path_arc_angle_end_fp
+    } {
+         \draw_path_arc:VVVV \l_qdraw_path_arc_radius_a_dim
+            \l_qdraw_path_arc_radius_b_dim
+            \l_qdraw_path_arc_angle_start_fp
+            \l_qdraw_path_arc_angle_end_fp
+    }
+    % better not use internal variables here, but we need to update the last coordinate
+    \fp_set:Nn \l_qdraw_last_coordinate_fp { ( \g__draw_path_lastx_dim , \g__draw_path_lasty_dim ) }
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+\bool_new:N \l_qdraw_path_rectangle_relative_bool
+\fp_new:N \l_qdraw_path_rectangle_corner_fp
+
+\cs_generate_variant:Nn \draw_path_rectangle:nn { VV }
+\cs_generate_variant:Nn \draw_path_rectangle_corners:nn { VV }
+
+\keys_define:nn { qdraw / path / rectangle } {
+    relative                .bool_set:N     = \l_qdraw_path_rectangle_relative_bool ,
+    relative                .default:n      = { true } ,
+    relative                .initial:n      = { false } ,
+    corner                  .fp_set:N       = \l_qdraw_path_rectangle_corner_fp ,
+    corner                  .initial:n      = { ( 1cm , 1cm ) } ,
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ r :w } rectangle #1 [ #2 ] #3 \q_stop {
+    \keys_set:nn { qdraw / path / rectangle } {#2}
+    \bool_if:NTF \l_qdraw_path_rectangle_relative_bool {
+        \draw_path_rectangle:VV \l_qdraw_last_coordinate_fp
+            \l_qdraw_path_rectangle_corner_fp
+        \fp_set:Nn \l_qdraw_last_coordinate_fp {
+            \l_qdraw_last_coordinate_fp + \l_qdraw_path_rectangle_corner_fp
+        }
+    } {
+        \draw_path_rectangle_corners:VV \l_qdraw_last_coordinate_fp
+            \l_qdraw_path_rectangle_corner_fp
+        \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l_qdraw_path_rectangle_corner_fp
+    }
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+\clist_new:N \l_qdraw_path_grid_step_clist
+\fp_new:N \l_qdraw_path_grid_corner_fp
+
+\cs_generate_variant:Nn \draw_path_grid:nnnn { eeVV }
+
+\keys_define:nn { qdraw / path / grid } {
+    step                    .clist_set:N    = \l_qdraw_path_grid_step_clist ,
+    step                    .initial:n      = { 1cm } ,
+    corner                  .fp_set:N       = \l_qdraw_path_grid_corner_fp ,
+    corner                  .initial:n      = { ( 1cm , 1cm ) } ,
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ g :w } grid #1 [ #2 ] #3 \q_stop {
+    \keys_set:nn { qdraw / path / grid } {#2}
+    \int_compare:nNnTF { \clist_count:N \l_qdraw_path_grid_step_clist } > { 1 } {
+        \draw_path_grid:eeVV {
+            \clist_item:Nn \l_qdraw_path_grid_step_clist { 1 }
+        } {
+            \clist_item:Nn \l_qdraw_path_grid_step_clist { 2 }
+        }
+            \l_qdraw_last_coordinate_fp
+            \l_qdraw_path_grid_corner_fp
+    } {
+        \draw_path_grid:eeVV {
+            \clist_item:Nn \l_qdraw_path_grid_step_clist { 1 }
+        } {
+            \clist_item:Nn \l_qdraw_path_grid_step_clist { 1 }
+        }
+            \l_qdraw_last_coordinate_fp
+            \l_qdraw_path_grid_corner_fp
+    }
+    \fp_set_eq:NN \l_qdraw_last_coordinate_fp \l_qdraw_path_grid_corner_fp
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+% ===
+
+\bool_new:N \l__qdraw_node_vbox_bool
+\coffin_new:N \l_qdraw_node_coffin
+
+\dim_new:N \l_qdraw_node_width_dim
+\dim_new:N \l_qdraw_node_height_dim
+\clist_new:N \l_qdraw_node_anchor_clist
+
+\cs_generate_variant:Nn \draw_coffin_use:Nnnn { NeeV }
+
+\keys_define:nn { qdraw / node } {
+    at                      .code:n         = {
+        \qdraw_parse_coordinate:Nn \l_qdraw_last_coordinate_fp {#1}
+    } ,
+    anchor                  .clist_set:N    = \l_qdraw_node_anchor_clist ,
+    anchor                  .initial:n      = { hc , vc } ,
+    width                   .code:n         = {
+        \bool_set_true:N \l__qdraw_node_vbox_bool
+        \dim_set:Nn \l_qdraw_node_width_dim {#1}
+    } ,
+    width                   .initial:n      = { 0pt } ,
+    height                  .dim_set:N      = \l_qdraw_node_height_dim ,
+    height                  .initial:n      = { 0pt } ,
+}
+
+\cs_new_protected:cpn { __qdraw_process_path_ n :w } node #1#2 \q_stop {
+    \tl_if_head_eq_meaning:nNTF {#1} [ {
+        \__qdraw_process_node_options:w #1#2 \q_stop
+    } {
+        \qdraw_process_node:nn { } {#1}
+        \tl_trim_spaces_apply:nN {#2} \__qdraw_continue_path:n
+    }
+}
+
+\cs_new_protected:Npn \__qdraw_process_node_options:w [ #1 ] #2#3 \q_stop {
+    \qdraw_process_node:nn {#1} {#2}
+    \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
+}
+
+\cs_new_protected:Npn \qdraw_process_node:nn #1#2 {
+    \group_begin:
+        \keys_set:nn { qdraw / node } {#1}
+        \bool_if:NTF \l__qdraw_node_vbox_bool {
+            \vcoffin_set:Nnn \l_qdraw_node_coffin {
+                \l_qdraw_node_width_dim
+            } {
+                \normalfont #2
+            }
+        } {
+            \hcoffin_set:Nn \l_qdraw_node_coffin{
+                \normalfont #2
+            }
+        }
+        \draw_coffin_use:NeeV \l_qdraw_node_coffin {
+            \clist_item:Nn \l_qdraw_node_anchor_clist { 1 }
+        } {
+            \clist_item:Nn \l_qdraw_node_anchor_clist { 2 }
+        } \l_qdraw_last_coordinate_fp
+    \group_end:
+}
+
+% ===
+
+\NewDocumentCommand \qdrawset { m } {
+    \keys_set:nn { qdraw / path } {#1}
+}
+
+\NewDocumentEnvironment { qdraw } { O{} } {
+    \nullfont
+    \cs_set_eq:NN \path \qdraw_path:w
+    \cs_set:Npn \stroke { \path [ stroke ] }
+    \cs_set:Npn \fill { \path [ fill ] }
+    \cs_set:Npn \node { \path ( 0pt, 0pt ) node }
+    \NewDocumentEnvironment { scope } { O{} } {
+        \draw_scope_begin:
+            \keys_set_known:nnN { qdraw / scope } {##1}
+                \l__qdraw_keys_unprocessed_clist
+            \keys_set:nV { qdraw / path } \l__qdraw_keys_unprocessed_clist
+            \str_if_empty:NF \l_qdraw_scope_layer_str {
+                \draw_layer_begin:V \l_qdraw_scope_layer_str
+            }
+    } {
+            \str_if_empty:NF \l_qdraw_scope_layer_str {
+                \draw_layer_end:
+            }
+        \draw_scope_end:
+    }
+    \keys_set_known:nnN { qdraw / env } {#1}
+        \l__qdraw_keys_unprocessed_clist
+    \keys_set:nV { qdraw / path } \l__qdraw_keys_unprocessed_clist
+    \draw_begin:
+} {
+    \draw_end:
+}
+
+% EOF

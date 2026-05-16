@@ -1,5 +1,5 @@
 \documentclass{article}
-\usepackage{vectorgraphic}
+\usepackage{qdraw}
 
 % syntax cheatsheet:
 % [<options>] > set options for the path (can be used after every coordinate)
@@ -23,12 +23,12 @@
 
 \begin{document}
 
-\begin{vectorgraphic}
+\begin{qdraw}
     \path[stroke, stroke color=blue] (0,0) -- (0cm,1cm) .. (1cm,1cm) .. (1cm,2cm) -- (1.5cm,2.5cm) -- (1cm,0cm) ! ;
-\end{vectorgraphic}
+\end{qdraw}
 
-\begin{vectorgraphic}
+\begin{qdraw}
     \path[fill, fill color=red] (0,0) -- (0cm,1cm) .. (1cm,1cm) & (1cm,2cm) .. (2cm,2cm) -- (3cm,2.5cm) -- (2cm,0cm) ! ;
-\end{vectorgraphic}
+\end{qdraw}
 
 \end{document}
