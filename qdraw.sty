@@ -61,10 +61,12 @@
 
 \clist_new:N \l__qdraw_keys_unprocessed_clist
 
-\int_new:N \g_qdraw_env_int
+\int_new:N \g_qdraw_id_int
 \bool_new:N \l_qdraw_overlay_bool
 
 \clist_new:N \l_qdraw_path_use_clist
+\bool_new:N \g__qdraw_path_use_clip_bool
+\bool_new:N \l__qdraw_path_clip_bool
 \str_new:N \l_qdraw_path_stroke_color_str
 \str_new:N \l_qdraw_path_fill_color_str
 \fp_new:N \l_qdraw_path_stroke_opacity_fp
@@ -80,6 +82,11 @@
 \clist_new:N \l_qdraw_path_dash_pattern_clist
 \dim_new:N \l_qdraw_path_dash_phase_dim
 
+\fp_new:N \l_qdraw_path_shift_fp
+\fp_new:N \l_qdraw_path_rotate_fp
+\clist_new:N \l_qdraw_path_scale_clist
+\clist_new:N \l_qdraw_path_slant_clist
+
 \fp_new:N \l_qdraw_path_first_point_fp
 \fp_new:N \l_qdraw_path_last_point_fp
 \fp_new:N \l__qdraw_point_a_fp
@@ -94,9 +101,16 @@
 \cs_generate_variant:Nn \draw_set_dash_pattern:nn { VV }
 \cs_generate_variant:Nn \draw_path_corner_arc:nn { ee }
 \cs_generate_variant:Nn \draw_path_use_clear:n { e }
+\cs_generate_variant:Nn \draw_transform_shift:n { V }
+\cs_generate_variant:Nn \draw_transform_rotate:n { V }
+\cs_generate_variant:Nn \draw_transform_scale:n { e }
+\cs_generate_variant:Nn \draw_transform_xscale:n { e }
+\cs_generate_variant:Nn \draw_transform_yscale:n { e }
+\cs_generate_variant:Nn \draw_transform_xslant:n { e }
+\cs_generate_variant:Nn \draw_transform_yslant:n { e }
 \cs_generate_variant:Nn \draw_layer_begin:n { V }
 
-\keys_define:nn { qdraw / env } {
+\keys_define:nn { qdraw / instance } {
     baseline                .code:n         = { \draw_set_baseline:n {#1} } ,
     layers                  .code:n         = {
         \clist_map_inline:nn {#1} {
@@ -122,9 +136,9 @@
     fill                    .code:n         = {
         \clist_put_right:Nn \l_qdraw_path_use_clist { fill }
     } ,
-    clip                    .code:n         = {
-        \clist_put_right:Nn \l_qdraw_path_use_clist { clip }
-    } ,
+    clip                    .bool_gset:N    = \g__qdraw_path_use_clip_bool ,
+    clip                    .default:n      = { true } ,
+    clip                    .initial:n      = { false } ,
     stroke ~ color          .str_set:N      = \l_qdraw_path_stroke_color_str ,
     stroke ~ color          .initial:n      = { . } ,
     fill ~ color            .str_set:N      = \l_qdraw_path_fill_color_str ,
@@ -159,20 +173,28 @@
     line ~ join             .initial:n      = { miter } ,
     miter ~ limit           .fp_set:N       = \l_qdraw_path_miterlimit_fp ,
     miter ~ limit           .initial:n      = { 10 } ,
+    dash ~ pattern          .clist_set:N    = \l_qdraw_path_dash_pattern_clist ,
+    dash ~ pattern          .initial:n      = { } ,
+    dash ~ phase            .dim_set:N      = \l_qdraw_path_dash_phase_dim ,
+    dash ~ phase            .initial:n      = { 0pt } ,
     corner ~ arc            .clist_set:N    = \l_qdraw_path_corner_arc_clist ,
     corner ~ arc            .initial:n      = { 0pt } ,
     fill ~ rule             .choice: ,
-    fill ~ rule / even ~ odd .code:n        = {
+    fill ~ rule / even-odd  .code:n        = {
         \str_set:Nn \l_qdraw_path_fill_rule_str { evenodd }
     } ,
     fill ~ rule / non-zero  .code:n         = {
         \str_set:Nn \l_qdraw_path_fill_rule_str { nonzero }
     } ,
     fill ~ rule             .initial:n      = { non-zero } ,
-    dash ~ pattern          .clist_set:N    = \l_qdraw_path_dash_pattern_clist ,
-    dash ~ pattern          .initial:n      = { } ,
-    dash ~ phase            .dim_set:N      = \l_qdraw_path_dash_phase_dim ,
-    dash ~ phase            .initial:n      = { 0pt } ,
+    shift                   .fp_set:N       = \l_qdraw_path_shift_fp ,
+    shift                   .initial:n      = { ( 0pt , 0pt ) } ,
+    rotate                  .fp_set:N       = \l_qdraw_path_rotate_fp ,
+    rotate                  .initial:n      = { 0 } ,
+    scale                   .clist_set:N    = \l_qdraw_path_scale_clist ,
+    scale                   .initial:n      = { 1 , 1 } ,
+    slant                   .clist_set:N    = \l_qdraw_path_slant_clist ,
+    slant                   .initial:n      = { 0 , 0 } ,
 }
 
 \cs_new:Npn \__qdraw_fp_tuple_use_i:w ( #1 , #2 ) {#1}
@@ -218,47 +240,79 @@
     \use:c { draw_set_ \l_qdraw_path_fill_rule_str _rule: }
     \draw_set_dash_pattern:VV \l_qdraw_path_dash_pattern_clist
         \l_qdraw_path_dash_phase_dim
+    \draw_transform_shift:V \l_qdraw_path_shift_fp
+    \draw_transform_rotate:V \l_qdraw_path_rotate_fp
+    \int_compare:nNnTF { \clist_count:N \l_qdraw_path_scale_clist } > { 1 } {
+        \draw_transform_xscale:e {
+            \clist_item:Nn \l_qdraw_path_scale_clist { 1 }
+        }
+        \draw_transform_yscale:e {
+            \clist_item:Nn \l_qdraw_path_scale_clist { 2 }
+        }
+    } {
+        \draw_transform_scale:e {
+            \clist_item:Nn \l_qdraw_path_scale_clist { 1 }
+        }
+    }
+    \int_compare:nNnTF { \clist_count:N \l_qdraw_path_slant_clist } > { 1 } {
+        \draw_transform_xslant:e {
+            \clist_item:Nn \l_qdraw_path_slant_clist { 1 }
+        }
+        \draw_transform_yslant:e {
+            \clist_item:Nn \l_qdraw_path_slant_clist { 2 }
+        }
+    } {
+        \draw_transform_xslant:e {
+            \clist_item:Nn \l_qdraw_path_slant_clist { 1 }
+        }
+        \draw_transform_yslant:e {
+            \clist_item:Nn \l_qdraw_path_slant_clist { 1 }
+        }
+    }
 }
 
 % ===
 
-\fp_new:N \l_qdraw_path_point_at_fp
-\tl_new:N \l_qdraw_path_point_name_tl
+\fp_new:N \l_qdraw_point_at_fp
+\tl_new:N \l_qdraw_point_name_tl
 
 \keys_define:nn { qdraw / path / point } {
-    at                      .fp_set:N       = \l_qdraw_path_point_at_fp ,
-    name                    .tl_set:N       = \l_qdraw_path_point_name_tl ,
+    at                      .fp_set:N       = \l_qdraw_point_at_fp ,
+    name                    .tl_set:N       = \l_qdraw_point_name_tl ,
 }
 
 \cs_new_protected:cpn { __qdraw_process_path_ p :w } point #1 [ #2 ] #3 \q_stop {
-    \fp_set_eq:NN \l_qdraw_path_point_at_fp \l_qdraw_last_point_fp
+    \fp_set_eq:NN \l_qdraw_point_at_fp \l_qdraw_path_last_point_fp
     \keys_set:nn { qdraw / path / point } {#2}
-    \prop_gput:cVV { g__qdraw_ \int_use:N \g_qdraw_env_int _path_points_prop }
-        \l_qdraw_path_point_name_tl
-        \l_qdraw_path_point_at_fp
+    \prop_gput:cVV { g__qdraw_points_ \int_use:N \g_qdraw_id_int _prop }
+        \l_qdraw_point_name_tl
+        \l_qdraw_point_at_fp
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
 
 \cs_new_protected:Npn \qdraw_parse_point:Nn #1#2 {
     \prop_if_in:cnTF {
-        g__qdraw_ \int_use:N \g_qdraw_env_int _path_points_prop
+        g__qdraw_points_ \int_use:N \g_qdraw_id_int _prop
     } {#2} {
+        \exp_args:NNe
         \fp_set:Nn #1 {
             \prop_item:cn {
-                g__qdraw_ \int_use:N \g_qdraw_env_int _path_points_prop
+                g__qdraw_points_ \int_use:N \g_qdraw_id_int _prop
             } {#2}
         }
     } {
-        \tl_if_in:nnTF {#2} { : } {
+        \tl_if_in:nVTF {#2} \c_colon_str {
             \fp_set:Nn #1 {
-                \qdraw_parse_point_polar:w #2 \q_stop
+                \__qdraw_parse_point_polar:w #2 \q_stop
             }
         } {
             \fp_set:Nn #1 {#2}
         }
     }
 }
-\cs_new_protected:Npn \qdraw_parse_point_polar:w #1 : #2 \q_stop {
+
+\exp_last_unbraced:NNNNo
+\cs_new:Npn \__qdraw_parse_point_polar:w #1 \c_colon_str #2 \q_stop {
     \draw_point_polar:nn {#2} {#1}
 }
 
@@ -268,17 +322,23 @@
     \draw_scope_begin:
         \fp_set:Nn \l__qdraw_point_a_fp { ( 0pt , 0pt ) }
         \fp_set:Nn \l__qdraw_point_b_fp { ( 0pt , 0pt ) }
-        \fp_set:Nn \l_qdraw_first_point_fp { ( 0pt , 0pt ) }
-        \fp_set:Nn \l_qdraw_last_point_fp { ( 0pt , 0pt ) }
-        \qdraw_set_path_options:
+        \fp_set:Nn \l_qdraw_path_first_point_fp { ( 0pt , 0pt ) }
+        \fp_set:Nn \l_qdraw_path_last_point_fp { ( 0pt , 0pt ) }
         \tl_trim_spaces_apply:nN {#1} \__qdraw_process_path:n
         \draw_path_use_clear:e { \clist_use:N \l_qdraw_path_use_clist }
     \draw_scope_end:
+    \bool_if:NT \g__qdraw_path_use_clip_bool {
+        \bool_set_true:N \l__qdraw_path_clip_bool
+        \tl_trim_spaces_apply:nN {#1} \__qdraw_process_path:n
+        \draw_path_use_clear:n { clip }
+        \bool_set_false:N \l__qdraw_path_clip_bool
+        \bool_gset_false:N \g__qdraw_path_use_clip_bool
+    }
 }
 
 \cs_new_protected:Npn \__qdraw_process_path:n #1 {
     \cs_if_exist_use:cT {
-        __qdraw_process_path_ \tl_head:n {#1} :w 
+        __qdraw_process_path_ \tl_head:n {#1} :w
     } {
         #1 \q_stop
     }
@@ -291,8 +351,10 @@
 }
 
 \cs_new_protected:cpn { __qdraw_process_path_ [ :w } [ #1 ] #2 \q_stop {
-    \keys_set:nn { qdraw / path } {#1}
-    \qdraw_set_path_options:
+    \bool_if:NF \l__qdraw_path_clip_bool {
+        \keys_set:nn { qdraw / path } {#1}
+        \qdraw_set_path_options:
+    }
     \tl_trim_spaces_apply:nN {#2} \__qdraw_continue_path:n
 }
 
@@ -301,8 +363,8 @@
     \draw_path_moveto:n {
         \l__qdraw_point_a_fp
     }
-    \fp_set_eq:NN \l_qdraw_first_point_fp \l__qdraw_point_a_fp
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l__qdraw_point_a_fp
+    \fp_set_eq:NN \l_qdraw_path_first_point_fp \l__qdraw_point_a_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l__qdraw_point_a_fp
     \tl_trim_spaces_apply:nN {#2} \__qdraw_continue_path:n
 }
 
@@ -310,7 +372,7 @@
 
 \cs_new:Npn \__qdraw_process_line_path:n #1 {
     \cs_if_exist_use:cT {
-        __qdraw_process_path_line_ \tl_head:n {#1} :w 
+        __qdraw_process_path_line_ \tl_head:n {#1} :w
     } {
         #1 \q_stop
     }
@@ -326,7 +388,7 @@
     \draw_path_lineto:n {
         \l__qdraw_point_a_fp
     }
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l__qdraw_point_a_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l__qdraw_point_a_fp
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
 
@@ -337,13 +399,13 @@
         (
             \qdraw_fp_tuple_use_i:V \l__qdraw_point_a_fp
         ,
-            \qdraw_fp_tuple_use_ii:V \l_qdraw_last_point_fp
+            \qdraw_fp_tuple_use_ii:V \l_qdraw_path_last_point_fp
         )
     }
     \draw_path_lineto:n {
         \l__qdraw_point_a_fp
     }
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l__qdraw_point_a_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l__qdraw_point_a_fp
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
 
@@ -353,7 +415,7 @@
     \qdraw_parse_point:Nn \l__qdraw_point_a_fp {#2}
     \draw_path_lineto:n {
         (
-            \qdraw_fp_tuple_use_i:V \l_qdraw_last_point_fp
+            \qdraw_fp_tuple_use_i:V \l_qdraw_path_last_point_fp
         ,
             \qdraw_fp_tuple_use_ii:V \l__qdraw_point_a_fp
         )
@@ -361,7 +423,7 @@
     \draw_path_lineto:n {
         \l__qdraw_point_a_fp
     }
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l__qdraw_point_a_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l__qdraw_point_a_fp
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
 
@@ -369,7 +431,7 @@
 
 \cs_new:Npn \__qdraw_process_curve_path:n #1 {
     \cs_if_exist_use:cT {
-        __qdraw_process_path_curve_ \tl_head:n {#1} :w 
+        __qdraw_process_path_curve_ \tl_head:n {#1} :w
     } {
         #1 \q_stop
     }
@@ -383,36 +445,36 @@
 
 \cs_new_protected:cpn { __qdraw_process_path_curve_ . :w } .. #1 ( #2 ) #3 \q_stop {
     % what do we do with #1?
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l__qdraw_point_a_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l__qdraw_point_a_fp
     \qdraw_parse_point:Nn \l__qdraw_point_a_fp {#2}
     \draw_path_curveto:nn {
-        \l_qdraw_last_point_fp
+        \l_qdraw_path_last_point_fp
     } {
         \l__qdraw_point_a_fp
     }
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l__qdraw_point_a_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l__qdraw_point_a_fp
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
 
 \cs_new_protected:cpn { __qdraw_process_path_curve_ & :w } & #1 ( #2 ) #3 .. #4 ( #5 ) #6 \q_stop {
     % what do we do with #1, #3, #4?
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l__qdraw_point_a_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l__qdraw_point_a_fp
     \qdraw_parse_point:Nn \l__qdraw_point_a_fp {#2}
     \qdraw_parse_point:Nn \l__qdraw_point_b_fp {#5}
     \draw_path_curveto:nnn {
-        \l_qdraw_last_point_fp
+        \l_qdraw_path_last_point_fp
     } {
         \l__qdraw_point_a_fp
     } {
         \l__qdraw_point_b_fp
     }
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l__qdraw_point_b_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l__qdraw_point_b_fp
     \tl_trim_spaces_apply:nN {#6} \__qdraw_continue_path:n
 }
 
 \cs_new_protected:cpn { __qdraw_process_path_ ! :w } ! #1 \q_stop {
     \draw_path_close:
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l_qdraw_first_point_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l_qdraw_path_first_point_fp
     \tl_trim_spaces_apply:nN {#1} \__qdraw_continue_path:n
 }
 
@@ -429,7 +491,7 @@
 
 \cs_new_protected:cpn { __qdraw_process_path_ c :w } circle #1 [ #2 ] #3 \q_stop {
     \keys_set:nn { qdraw / path / circle } {#2}
-    \draw_path_circle:VV \l_qdraw_last_point_fp
+    \draw_path_circle:VV \l_qdraw_path_last_point_fp
         \l_qdraw_path_circle_radius_dim
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
@@ -448,7 +510,7 @@
 
 \cs_new_protected:cpn { __qdraw_process_path_ e :w } ellipse #1 [ #2 ] #3 \q_stop {
     \keys_set:nn { qdraw / path / ellipse } {#2}
-    \draw_path_ellipse:VVV \l_qdraw_last_point_fp
+    \draw_path_ellipse:VVV \l_qdraw_path_last_point_fp
         \l_qdraw_path_ellipse_vector_a_fp
         \l_qdraw_path_ellipse_vector_b_fp
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
@@ -509,7 +571,7 @@
             \l_qdraw_path_arc_angle_end_fp
     }
     % better not use internal variables here, but we need to update the last point
-    \fp_set:Nn \l_qdraw_last_point_fp { ( \g__draw_path_lastx_dim , \g__draw_path_lasty_dim ) }
+    \fp_set:Nn \l_qdraw_path_last_point_fp { ( \g__draw_path_lastx_dim , \g__draw_path_lasty_dim ) }
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
 
@@ -530,15 +592,15 @@
 \cs_new_protected:cpn { __qdraw_process_path_ r :w } rectangle #1 [ #2 ] #3 \q_stop {
     \keys_set:nn { qdraw / path / rectangle } {#2}
     \bool_if:NTF \l_qdraw_path_rectangle_relative_bool {
-        \draw_path_rectangle:VV \l_qdraw_last_point_fp
+        \draw_path_rectangle:VV \l_qdraw_path_last_point_fp
             \l_qdraw_path_rectangle_corner_fp
-        \fp_set:Nn \l_qdraw_last_point_fp {
-            \l_qdraw_last_point_fp + \l_qdraw_path_rectangle_corner_fp
+        \fp_set:Nn \l_qdraw_path_last_point_fp {
+            \l_qdraw_path_last_point_fp + \l_qdraw_path_rectangle_corner_fp
         }
     } {
-        \draw_path_rectangle_corners:VV \l_qdraw_last_point_fp
+        \draw_path_rectangle_corners:VV \l_qdraw_path_last_point_fp
             \l_qdraw_path_rectangle_corner_fp
-        \fp_set_eq:NN \l_qdraw_last_point_fp \l_qdraw_path_rectangle_corner_fp
+        \fp_set_eq:NN \l_qdraw_path_last_point_fp \l_qdraw_path_rectangle_corner_fp
     }
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
@@ -563,7 +625,7 @@
         } {
             \clist_item:Nn \l_qdraw_path_grid_step_clist { 2 }
         }
-            \l_qdraw_last_point_fp
+            \l_qdraw_path_last_point_fp
             \l_qdraw_path_grid_corner_fp
     } {
         \draw_path_grid:eeVV {
@@ -571,10 +633,10 @@
         } {
             \clist_item:Nn \l_qdraw_path_grid_step_clist { 1 }
         }
-            \l_qdraw_last_point_fp
+            \l_qdraw_path_last_point_fp
             \l_qdraw_path_grid_corner_fp
     }
-    \fp_set_eq:NN \l_qdraw_last_point_fp \l_qdraw_path_grid_corner_fp
+    \fp_set_eq:NN \l_qdraw_path_last_point_fp \l_qdraw_path_grid_corner_fp
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
 
@@ -583,6 +645,8 @@
 \bool_new:N \l__qdraw_node_vbox_bool
 \coffin_new:N \l_qdraw_node_coffin
 
+\fp_new:N \l_qdraw_node_at_fp
+\tl_new:N \l_qdraw_node_name_tl
 \dim_new:N \l_qdraw_node_width_dim
 \dim_new:N \l_qdraw_node_height_dim
 \clist_new:N \l_qdraw_node_anchor_clist
@@ -590,9 +654,8 @@
 \cs_generate_variant:Nn \draw_coffin_use:Nnnn { NeeV }
 
 \keys_define:nn { qdraw / node } {
-    at                      .code:n         = {
-        \qdraw_parse_point:Nn \l_qdraw_last_point_fp {#1}
-    } ,
+    at                      .fp_set:N       = \l_qdraw_node_at_fp ,
+    name                    .tl_set:N       = \l_qdraw_node_name_tl ,
     anchor                  .clist_set:N    = \l_qdraw_node_anchor_clist ,
     anchor                  .initial:n      = { hc , vc } ,
     width                   .code:n         = {
@@ -606,21 +669,27 @@
 
 \cs_new_protected:cpn { __qdraw_process_path_ n :w } node #1#2 \q_stop {
     \tl_if_head_eq_meaning:nNTF {#1} [ {
-        \__qdraw_process_node_options:w #1#2 \q_stop
+        \__qdraw_node_options:w #1#2 \q_stop
     } {
-        \qdraw_process_node:nn { } {#1}
+        \qdraw_node:nn { } {#1}
         \tl_trim_spaces_apply:nN {#2} \__qdraw_continue_path:n
     }
 }
 
-\cs_new_protected:Npn \__qdraw_process_node_options:w [ #1 ] #2#3 \q_stop {
-    \qdraw_process_node:nn {#1} {#2}
+\cs_new_protected:Npn \__qdraw_node_options:w [ #1 ] #2#3 \q_stop {
+    \qdraw_node:nn {#1} {#2}
     \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
 }
 
-\cs_new_protected:Npn \qdraw_process_node:nn #1#2 {
+\cs_new_protected:Npn \qdraw_node:nn #1#2 {
     \group_begin:
+        \fp_set_eq:NN \l_qdraw_point_at_fp \l_qdraw_path_last_point_fp
         \keys_set:nn { qdraw / node } {#1}
+        \tl_if_blank:nF \l_qdraw_node_name_tl {
+            \prop_gput:cnV { g__qdraw_points_ \int_use:N \g_qdraw_id_int _prop }
+                \l_qdraw_node_name_tl
+                \l_qdraw_point_at_fp
+        }
         \bool_if:NTF \l__qdraw_node_vbox_bool {
             \vcoffin_set:Nnn \l_qdraw_node_coffin {
                 \l_qdraw_node_width_dim
@@ -636,7 +705,7 @@
             \clist_item:Nn \l_qdraw_node_anchor_clist { 1 }
         } {
             \clist_item:Nn \l_qdraw_node_anchor_clist { 2 }
-        } \l_qdraw_last_point_fp
+        } \l_qdraw_path_last_point_fp
     \group_end:
 }
 
@@ -659,6 +728,12 @@
     end                     .initial:n      = { 1 } ,
 }
 
+% not fully working
+\cs_new_protected:cpn { __qdraw_process_path_ m :w } map #1 [ #2 ] #3#4 \q_stop {
+    \qdraw_map:nn {#2} {#3}
+    \tl_trim_spaces_apply:nN {#4} \__qdraw_continue_path:n
+}
+
 \cs_new_protected:Npn \qdraw_map:nn #1#2 {
     \keys_set:nn { qdraw / map } {#1}
     \int_compare:nNnTF { \clist_count:N \l_qdraw_map_list_clist } > { 0 } {
@@ -679,19 +754,21 @@
 }
 
 \NewDocumentEnvironment { qdraw } { O{} } {
+    \mode_leave_vertical:
     \nullfont
-    \int_gincr:N \g_qdraw_env_int
+    \int_gincr:N \g_qdraw_id_int
     \prop_if_exist:cF {
-        g__qdraw_ \int_use:N \g_qdraw_env_int _path_points_prop
+        g__qdraw_points_ \int_use:N \g_qdraw_id_int _prop
     } {
         \prop_new_linked:c {
-            g__qdraw_ \int_use:N \g_qdraw_env_int _path_points_prop
+            g__qdraw_points_ \int_use:N \g_qdraw_id_int _prop
         }
     }
     \clist_clear:N \l__qdraw_keys_unprocessed_clist
     \cs_set_eq:NN \path \qdraw_path:w
     \cs_set:Npn \stroke { \path [ stroke ] }
     \cs_set:Npn \fill { \path [ fill ] }
+    \cs_set:Npn \clip { \path [ clip ] }
     \cs_set:Npn \node { \path ( 0pt, 0pt ) node }
     \cs_set:Npn \point { \path ( 0pt, 0pt ) point }
     \NewDocumentCommand \map { O{} m } {
@@ -711,10 +788,13 @@
             }
         \draw_scope_end:
     }
-    \keys_set_known:nnN { qdraw / env } {#1}
+    \keys_set_known:nnN { qdraw / instance } {#1}
         \l__qdraw_keys_unprocessed_clist
     \keys_set:nV { qdraw / path } \l__qdraw_keys_unprocessed_clist
     \draw_begin:
+        \bool_if:NT \l_qdraw_overlay_bool {
+            \bool_set_false:N \l_draw_bb_update_bool
+        }
 } {
     \draw_end:
 }
