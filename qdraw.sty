@@ -10,7 +10,7 @@
 %
 % This work has the LPPL maintenance status `maintained'.
 %
-\ProvidesExplPackage {qdraw} {2026-05-14} {0.0.1}
+\ProvidesExplPackage {qdraw} {2026-05-18} {0.0.5}
   {An experimental package for drawing vector graphics with the l3draw package and a TikZ-like syntax.}
 
 \msg_new:nnn { qdraw } { old-kernel } {
@@ -95,7 +95,11 @@
 \str_new:N \l_qdraw_scope_layer_str
 
 \cs_generate_variant:Nn \color_select:n { V }
+\cs_generate_variant:Nn \color_fill:n { V }
+\cs_generate_variant:Nn \color_stroke:n { V }
 \cs_generate_variant:Nn \opacity_select:n { V }
+\cs_generate_variant:Nn \opacity_fill:n { V }
+\cs_generate_variant:Nn \opacity_stroke:n { V }
 \cs_generate_variant:Nn \draw_set_linewidth:n { V }
 \cs_generate_variant:Nn \draw_set_miterlimit:n { V }
 \cs_generate_variant:Nn \draw_set_dash_pattern:nn { VV }
@@ -109,6 +113,8 @@
 \cs_generate_variant:Nn \draw_transform_xslant:n { e }
 \cs_generate_variant:Nn \draw_transform_yslant:n { e }
 \cs_generate_variant:Nn \draw_layer_begin:n { V }
+
+\exp_args_generate:n { NNNe }
 
 \keys_define:nn { qdraw / instance } {
     baseline                .code:n         = { \draw_set_baseline:n {#1} } ,
@@ -216,10 +222,10 @@
 \cs_generate_variant:Nn \qdraw_fp_tuple_use_ii:n { V }
 
 \cs_new_protected:Npn \qdraw_set_path_options: {
-    \color_select:V \l_qdraw_path_stroke_color_str
-    \color_select:V \l_qdraw_path_fill_color_str
-    \opacity_select:V \l_qdraw_path_stroke_opacity_fp
-    \opacity_select:V \l_qdraw_path_fill_opacity_fp
+    \color_stroke:V \l_qdraw_path_stroke_color_str
+    \color_fill:V \l_qdraw_path_fill_color_str
+    \opacity_stroke:V \l_qdraw_path_stroke_opacity_fp
+    \opacity_fill:V \l_qdraw_path_fill_opacity_fp
     \draw_set_linewidth:V \l_qdraw_path_linewidth_dim
     \draw_set_miterlimit:V\l_qdraw_path_miterlimit_fp
     \use:c { draw_set_cap_ \l_qdraw_path_cap_str : }
@@ -716,7 +722,7 @@
 \fp_new:N \l_qdraw_map_step_fp
 \fp_new:N \l_qdraw_map_end_fp
 
-\cs_generate_variant:Nn \fp_step_inline:nnnn { VVV }
+\cs_generate_variant:Nn \fp_step_function:nnnN { VVV }
 
 \keys_define:nn { qdraw / map } {
     list                    .clist_set:N    = \l_qdraw_map_list_clist ,
@@ -728,24 +734,25 @@
     end                     .initial:n      = { 1 } ,
 }
 
-% not fully working
 \cs_new_protected:cpn { __qdraw_process_path_ m :w } map #1 [ #2 ] #3#4 \q_stop {
-    \qdraw_map:nn {#2} {#3}
-    \tl_trim_spaces_apply:nN {#4} \__qdraw_continue_path:n
-}
-
-\cs_new_protected:Npn \qdraw_map:nn #1#2 {
-    \keys_set:nn { qdraw / map } {#1}
+    \keys_set:nn { qdraw / map } {#2}
+    \exp_args:NNNNe
+    \cs_set_protected:Npn \__qdraw_map_function:n ##1 {
+        \exp_not:N \path ( \l_qdraw_path_last_point_fp ) #3 ;
+    }
     \int_compare:nNnTF { \clist_count:N \l_qdraw_map_list_clist } > { 0 } {
-        \clist_map_inline:Nn \l_qdraw_map_list_clist {#2}
+        \clist_map_function:NN \l_qdraw_map_list_clist \__qdraw_map_function:n
     } {
-        \fp_step_inline:VVVn
+        \fp_step_function:VVVN
             \l_qdraw_map_start_fp
             \l_qdraw_map_step_fp
             \l_qdraw_map_end_fp
-            {#2}
+            \__qdraw_map_function:n
     }
+    \tl_trim_spaces_apply:nN {#4} \__qdraw_continue_path:n
 }
+
+\cs_new_protected:Npn \__qdraw_map_function:n #1 { }
 
 % ===
 
@@ -771,9 +778,7 @@
     \cs_set:Npn \clip { \path [ clip ] }
     \cs_set:Npn \node { \path ( 0pt, 0pt ) node }
     \cs_set:Npn \point { \path ( 0pt, 0pt ) point }
-    \NewDocumentCommand \map { O{} m } {
-        \qdraw_map:nn {##1} {##2}
-    }
+    \cs_set:Npn \map { \path ( 0pt, 0pt ) map }
     \NewDocumentEnvironment { scope } { O{} } {
         \draw_scope_begin:
             \keys_set_known:nnN { qdraw / scope } {##1}
