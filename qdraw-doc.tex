@@ -1,0 +1,706 @@
+% File: qdraw-doc.tex
+% Copyright 2026 Jasper Habicht (mail(at)jasperhabicht.de).
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License version 1.3c,
+% available at http://www.latex-project.org/lppl/.
+%
+% This file is part of the `qdraw' package (The Work in LPPL)
+% and all files in that bundle must be distributed together.
+%
+% This work has the LPPL maintenance status `maintained'.
+%
+\documentclass[a4paper]{article}
+\def\qdrawfileversion{0.0.2}
+\def\qdrawfiledate{18 May 2026}
+
+\usepackage[T1]{fontenc}
+\usepackage{Alegreya}
+\usepackage{AlegreyaSans}
+\usepackage{FiraMono}
+
+\usepackage{geometry, longtable, booktabs, siunitx, tcolorbox, hyperref}
+\geometry{margin=25mm, left=45mm}
+\DeclareSIUnit{\point}{pt}
+\urlstyle{same}
+
+\usepackage{qdraw}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[R]{\thepage}
+
+\ExplSyntaxOn
+\NewDocumentCommand{\fnstars}{m}{
+  \int_step_inline:nn { \value{#1} } { * }
+}
+\ExplSyntaxOff
+
+\linespread{1.1}\selectfont
+\addtolength{\skip\footins}{1em plus 5pt}
+\makeatletter
+\renewcommand*{\thefootnote}{\fnstars{footnote}}
+\renewcommand{\@makefnmark}{\normalfont\@thefnmark}
+\renewcommand{\@makefntext}[1]{%
+  \noindent\hbox to 1em{\normalfont\@thefnmark\hss}~#1%
+}
+\makeatother
+
+\tcbuselibrary{skins,listings}
+\lstdefinestyle{qdrawdocmacro}{
+  basicstyle=\small\ttfamily,
+  literate=*{<}{{{\color{black!50}\guilsinglleft}}}1
+    {>}{{{\color{black!50}\guilsinglright}}}1,
+  keywords={},
+  moredelim=[is][\bfseries]{|}{|},
+  moredelim=[is][\bfseries\itshape]{?}{?},
+  moredelim=[is][\color{black!50}]{!}{!},
+}
+\lstdefinestyle{qdrawdocmacroalt}{
+  basicstyle=\small\ttfamily,
+  literate=*{<}{{{\color{black!50}\guilsinglleft}}}1
+    {>}{{{\color{black!50}\guilsinglright}}}1,
+  keywords={},
+  moredelim=[is][\bfseries]{!}{!},
+}
+\lstdefinestyle{qdrawdoccodeexample}{
+  basicstyle=\small\ttfamily,
+  keywords={},
+}
+
+\hypersetup{colorlinks}
+
+\ExplSyntaxOn
+\int_new:N \l_qdraw_doc_change_int
+\NewDocumentCommand{\changes}{ m m m }{
+  \int_incr:N \l_qdraw_doc_change_int
+  \prop_new:c { l_qdraw_doc_change_
+    \int_to_roman:n { \l_qdraw_doc_change_int } _prop }
+  \prop_put:cnn { l_qdraw_doc_change_
+    \int_to_roman:n { \l_qdraw_doc_change_int } _prop } { version } {#1}
+  \prop_put:cnn { l_qdraw_doc_change_
+    \int_to_roman:n { \l_qdraw_doc_change_int } _prop } { date } {#2}
+  \prop_put:cnn { l_qdraw_doc_change_
+    \int_to_roman:n { \l_qdraw_doc_change_int } _prop } { changes } {#3}
+}
+\NewDocumentCommand{\printchanges}{ }{
+  \section{Changes}
+  \begin{description}
+    \setlength\itemsep{0pt}
+    \int_step_inline:nn { \l_qdraw_doc_change_int } {
+      \item[
+        \prop_item:cn { l_qdraw_doc_change_
+        \int_to_roman:n { ##1 } _prop } { version } ~
+        \normalfont{ (
+          \prop_item:cn { l_qdraw_doc_change_
+          \int_to_roman:n { ##1 } _prop } { date }
+        ) }
+      ]
+      \prop_item:cn { l_qdraw_doc_change_
+      \int_to_roman:n { ##1 } _prop } { changes }
+    }
+  \end{description}
+}
+
+\tl_new:N \l_qdraw_doc_doctitle_tl
+\NewExpandableDocumentCommand{\makedoctitle}{ o m o m m o m }{
+  \hypersetup{
+    pdfauthor={#5},
+    pdftitle={\IfValueTF{#1}{#1}{#2}},
+    pdfsubject={\IfValueTF{#3}{#3}{#4}}
+  }
+  \tl_set:Nn \l_qdraw_doc_doctitle_tl {
+    \group_begin:
+      \tcbset{
+        title ~ style ~ hook/.style={
+          boxrule=2pt,
+          fontupper=\huge\ttfamily
+        }
+      }
+      \setlength{\parindent}{0pt}\sffamily
+      \Huge{\bfseries #2}\par\bigskip
+      \Large #4\par\bigskip
+      \large #5
+      \IfValueT{#6}{
+        \,\footnote{#6}\par\bigskip
+      }
+      #7\par\bigskip
+      \rule{\textwidth}{.08em}
+    \group_end:
+  }
+}
+
+\NewExpandableDocumentCommand{\printdoctitle}{ }{
+  \tl_use:N \l_qdraw_doc_doctitle_tl
+}
+\ExplSyntaxOff
+
+\NewDocumentCommand{\expandablestarcode}{ O{0,0} }{
+  \fill[black!50, shift={([xshift={-10pt}, yshift={-10pt-0.5em}]#1)}]
+    (90:3.75pt)
+    \foreach \i in {1,...,4} {
+      -- ({90+360/5*\i*2}:3.75pt)
+    } -- cycle;
+}
+
+\NewDocumentCommand{\expandablestar}{}{
+  \tikz{\expandablestarcode}
+}
+
+\NewDocumentCommand{\warning}{}{%
+  \begin{tikzpicture}[overlay, baseline={(w.base)}]
+    \node[circle, fill, black!25!red!10, text=black!25!red, outer sep=0pt]
+      (w) at (-3em,0pt) {\bfseries !};
+    \fill[black!25!red!10]
+      (w.east) |- (w.south) -- cycle;
+  \end{tikzpicture}%
+}
+
+\tcbset{
+  size=small,
+  arc=2.5pt,
+  outer arc=2.5pt,
+  colframe=black!10,
+  colback=black!10,
+  title style hook/.style={},
+}
+
+\NewTCBListing{macrodef}{ s o O{} }{
+  listing only,
+  listing style={qdrawdocmacro},
+  grow to left by=2cm,
+  boxrule=0pt,
+  after={\par\smallskip\noindent},
+  enhanced,
+  IfValueT={#2}{
+    hypertarget=#2
+  },
+  IfBooleanT={#1}{
+    overlay={
+      \expandablestarcode[frame.north east]
+    }
+  },
+  #3
+}
+
+\NewTCBListing{codeexample}{ }{
+  listing only,
+  listing style={qdrawdoccodeexample},
+  after={\par\smallskip\noindent}
+}
+
+\NewTCBListing{codeexamplecolumns}{ }{
+  text side listing,
+  lefthand width=4.5cm,
+  listing style={qdrawdoccodeexample},
+  after={\par\smallskip\noindent}
+}
+
+\NewTCBListing{macrodeprecated}{ s }{
+  listing only,
+  listing style={qdrawdocmacro},
+  boxrule=0pt,
+  width={0.5\linewidth-2.5pt},
+  box align=top,
+  after=\hfill,
+  colframe=black!25!red!10,
+  colback=black!25!red!10,
+  enhanced,
+  IfBooleanT={#1}{
+    overlay={
+      \fill[black!25!red!10]
+        ([yshift={5pt-1.5em}]frame.north east)
+        -- ++(5pt,-5pt) -- ++(-5pt,-5pt)
+        -- cycle;
+    }
+  }
+}
+
+\NewTCBListing{macroreplacement}{ }{
+  listing only,
+  listing style={qdrawdocmacro},
+  boxrule=0pt,
+  width={0.5\linewidth-2.5pt},
+  box align=top,
+  before={},
+  colframe=black!25!green!10,
+  colback=black!25!green!10
+}
+
+\NewTotalTCBox{\macro}{ O{} v }{
+  verbatim,
+  size=tight,
+  arc=1pt,
+  outer arc=1pt,
+  top=0.5pt,
+  bottom=0.5pt,
+  left=2pt,
+  right=2pt,
+  boxrule=0pt,
+  colframe=black!10,
+  colback=black!10,
+  fontupper=\small\ttfamily,
+  #1
+}{\vphantom{/g}\lstinline^#2^}
+
+\NewTotalTCBox{\titlemacro}{ s O{} m }{
+  verbatim,
+  size=tight,
+  arc=1pt,
+  outer arc=1pt,
+  top=0.5pt,
+  bottom=0.5pt,
+  left=2pt,
+  right=2pt,
+  boxrule=0pt,
+  colframe=black!10,
+  colback=black!10,
+  fontupper=\small\ttfamily,
+  title style hook,
+  #2
+}{\vphantom{/g}\IfBooleanT{#1}{\textbackslash}#3}
+
+\usepackage{qdraw}
+
+\makedoctitle
+  [The qdraw package]
+  {The \titlemacro{qdraw} package}
+  {A LaTeX package to generate vector graphic output based on the l3draw package and related LaTeX3 modules using a simple syntax}
+  {Jasper Habicht}[E-mail: \href{mailto:mail@jasperhabicht.de}{mail@jasperhabicht.de}. I am grateful to Joseph Wright, Max Chernoff and Clea F. Rees who helped me improving the code.]
+  {Version \qdrawfileversion, released on \qdrawfiledate}
+
+\changes{v0.0.5}{2026/05/18}{First public alpha release.}
+
+\begin{document}
+\printdoctitle
+
+\bigskip
+
+\section{Introduction}
+
+The package intends to define a set of user-level commands that can be used for drawing simple graphics based on the \macro{l3draw} package and related LaTeX3 modules. It does not aim to become a substitute for the Ti\emph{k}Z package or to offer a similar scope of application.
+
+The package is currently still in an experimental stage. The code may be subject to fundamental and frequent changes. The author is grateful for reporting any bugs via GitHub at \url{https://github.com/jasperhabicht/qdraw/issues}. A site for asking questions about the package and for suggestions for improvement is available at \url{https://github.com/jasperhabicht/qdraw/discussions}.
+
+\section{Loading the package}
+
+To install the package, copy the package file \macro{qdraw.sty} into the working directory or into the \macro{texmf} directory. After the package has been installed, the \macro{qdraw} package is loaded by calling \macro{\usepackage{qdraw}} in the preamble of the document.
+
+The package can be used with PDFLaTeX, LuaLaTeX or XeLaTeX. The package does not load any dependencies, but it needs a LaTeX kernel of 1 June 2022 or newer. It is recommended to use the package with an up-to-date TeX distribution.
+
+Note that the underlying code of the \macro{l3draw} package is experimental as well and hence might as well change possibly breaking the functionality of this package.
+
+\section{Main user environment}
+
+The package has only very few main user commands. Among these, the \macro{qdraw} environment is the most important as it is used to define a drawing and most other commands are only defined inside this environment.
+
+Similar to Ti\emph{k}Z, the \macro{qdraw} package makes use of key-value pairs to set options for commands. Some options are available for almost all commands, other have very specific uses. In the descriptions of the options, this manual states which datatype the relevant option assumes. The following datatypes exist:
+
+\begin{itemize}\setlength\itemsep{2pt}
+  \item \macro{boolean}: A boolean only allows the values \macro{true} or \macro{false}. If not stated otherwise, setting the key without a value is equivalent with setting the key to \macro{true}.
+  \item \macro{token list}: A token list is the most general value type and can be any content that is valid in TeX.
+  \item \macro{string}: A string is a concatenation of letters or numbers of any length. Typically, strings do not contain symbols.
+  \item \macro{float}: A floating-point number is a number without or with unit that uses a colon as decimal separator.
+  \item \macro{tuple}: A tuple consists of two floating-point numbers without or with unit that are separated by a comma.
+  \item \macro{dimension}: A dimension or length is a typical TeX length consisting of a floating point number and a length unit.
+  \item \macro{clist}: A comma-separated list is a list of strings that are separated by commas. Such a list can cosnist of no or only one item as well. If the relevant list can only have a maximum number of items, this is stated in the description of the relevant key.
+  \item \macro{color}: This means a color definition as specified by the \macro{l3color} module. Note that colors defined by the \macro{xcolor} package have no effect when using the \macro{qdraw} package.
+  \item Some keys do not accept any datatype as they are only executing some function.
+\end{itemize}
+
+\begin{macrodef}
+\\\begin{|qdraw|}[<options>]
+\end{|qdraw|}
+\end{macrodef}
+The \macro{qdraw} environment is the main environment for drawing. It defines most other commands described in the following sections. The following options can be set for the \macro{qdraw} environment:
+
+\begin{macrodef}
+|baseline|={<dimension>}
+\end{macrodef}
+The option \macro{baseline} sets the baseline for the environment as dimension. The default baseline is typically the bottom of the the bounding box of the drawing.
+
+\begin{macrodef}
+|layers|={<clist>}
+\end{macrodef}
+The option \macro{layers} sets the layers for the environment as a comma-separated list. The layer \macro{main} must always be present and is the default layer. Layers are drawn in the order they are defined.
+
+\begin{macrodef}
+|overlay|={<boolean>}
+\end{macrodef}
+The option \macro{overlay} sets the environment to have a zero-sized bounding box.
+
+\section{Path syntax}
+
+\subsection{Path command and options}
+
+\begin{macrodef}
+|\path| <path operations> ;
+\end{macrodef}
+The command \macro{\path} is used to to draw a path inside the \macro{qdraw} environment. The path is defined by a sequence of points and path construction operations. Each \macro{\path} command must end with a semicolon. The following operations can be used to construct the path:
+
+\begin{macrodef}
+|[|<options>|]|
+\end{macrodef}
+Options can be for the path using square brackets. The options are the same as for \macro{\qdrawset}. Options can be set multiple times for the same path after any point on the path. Some options (such as color options or transformations) will apply to the entire path and the last specified value will be used.
+
+\subsection{Points on the path}
+
+\begin{macrodef}
+|(|<a>|,|<b>|)|
+\end{macrodef}
+Points on the path can be defined using x and y parts. The first item in the tuple is the x-coordinate, and the second item is the y-coordinate.
+
+\begin{macrodef}
+|(|<a>|:|<b>|)|
+|(|<a>|:|<b>|,|<c>|)|
+\end{macrodef}
+Points on the path can also be defined using angle and radius parts. The first item in the tuple is the angle, and the second item is the radius. The seocnd item can contain a comma to define two radii.
+
+\begin{macrodef}
+|(|<name>|)|
+\end{macrodef}
+Points on the path can finally be referenced using names. Points on the path can be named by either using the \macro{point} or the \macro{node} operation with the given name set via the \macro{nname} option (see below).
+
+\subsection{Path operations}
+
+\begin{macrodef}
+|--| (<point>)
+\end{macrodef}
+Using \macro{--} a line to the next point is drawn.
+
+\begin{macrodef}[][listing style={qdrawdocmacroalt}]
+!|-! (<point>)
+!-|! (<point>)
+\end{macrodef}
+Using \macro{|-} a vertical, then horizontal line to the next point is drawn. Using \macro{-|} a vertical, then horizontal line to the next point is drawn.
+
+\begin{macrodef}
+|..| (<control point>) |..| (<point>)
+|..| (<control point>) |&| (<control point>) |..| (<point>)
+\end{macrodef}
+The above syntax draws a curve to the next point with a single control point or with two control points.
+
+\begin{macrodef}
+|!| (<point>)
+\end{macrodef}
+Using \macro{!} the path is closed by drawing a line from the last point to the first point.
+
+\bigskip 
+
+The following path operations require at least one option to be set:
+
+\begin{macrodef}
+|circle|[<options>]
+\end{macrodef}
+Using the \macro{circle} operation, a circle is drawn with the current point as center.
+
+\begin{macrodef}
+circle/|radius|={<dimension>}
+\end{macrodef}
+The radius is specified as a dimension with the \macro{radius} option.
+
+\begin{macrodef}
+|ellipse|[<options>]
+\end{macrodef}
+Using the \macro{ellipse} operation, an ellipse is drawn with the current point as center.
+
+\begin{macrodef}
+elllipse/|vector a|={<tuple>}
+elllipse/|vector b|={<tuple>}
+elllipse/|radius a|={<dimension>}
+elllipse/|radius b|={<dimension>}
+\end{macrodef}
+The vectors of the ellipse are specified as tuples of dimensions with the \macro{vector a} and \macro{vector b} options. ALternatively, the options \macro{radius a} and \macro{radius b} can be used to define the radii in the x- and y-dimension.
+
+\begin{macrodef}
+|arc|[<options>]
+\end{macrodef}
+Using the \macro{arc} operation, an arc is drawn with the current point as origin.
+
+\begin{macrodef}
+arc/|vector a|={<tuple>}
+arc/|vector b|={<tuple>}
+arc/|radius a|={<dimension>}
+arc/|radius b|={<dimension>}
+arc/|angle start|={<float>}
+arc/|angle end|={<float>}
+arc/|angle delta|={<float>}
+\end{macrodef}
+The vectors of the arc are specified as tuples of dimensions with the \macro{vector a} and \macro{vector b} options. ALternatively, the options \macro{radius a} and \macro{radius b} can be used to define the radii in the x- and y-dimension. The angles are specified as dimensions with the \macro{start angle} and \macro{end angle} options. Instead of the \macro{angle end} option, the option \macro{angle delta} can be used.
+
+\begin{macrodef}
+|rectangle|[<options>]
+\end{macrodef}
+Using the \macro{rectangle} operation, an rectangle with the current point as origin corner is drawn.
+
+\begin{macrodef}
+rectangle/|corner|={<tuple>}
+rectangle/|relative|={<boolean>}
+\end{macrodef}
+The other corner of the rectangle is specified as a point (a tuple) with the \macro{corner} option. If the boolean option \macro{relative} is set, the corner point is interpreted as relative to the current point instead of absolute.
+
+\begin{macrodef}
+|grid|[<options>]
+\end{macrodef}
+Using the \macro{grid} operation, a grid with the current point as origin corner is drawn.
+
+\begin{macrodef}
+grid/|step|={<tuple>}
+grid/|corner|={<tuple>}
+\end{macrodef}
+
+The step is specified as a comma-separated list of at most two dimensions with the \macro{step} option. The first item in the tuple is the step in the x-direction, and the second item is the step in the y-direction. If only one dimension is given, it is used for both directions. The other corner is specified as a point (a tuple) with the \macro{corner} option. 
+
+\subsection{Points and nodes}
+
+\begin{macrodef}
+|point|[<options>]
+\end{macrodef}
+Using the \macro{point} operation, a point at the current position is defined and named with the given name.
+
+\begin{macrodef}
+point/|at|={<tuple>}
+point/|name|={<string>}
+\end{macrodef}
+The position of the point can be adjusted with the \macro{at} option which accepts a point (a tuple). The point can be referenced later by using the name in parentheses (see above). 
+
+The command \macro{\point} is a shortcut for \macro{\path (0pt, 0pt) point}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path (0,0) point[name=A, at={(1cm,0.5cm)}] ;
+    \path[stroke] (0cm,0cm) -- (A) -- (0cm,1cm) ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{macrodef}
+|node|[<options>]{<content>}
+\end{macrodef}
+Using the \macro{node} operation, a node at the current position is defined and assigned the relevant content by the relevant argument.
+
+\begin{macrodef}
+node/|at|={<tuple>}
+node/|anchor|={<clist>}
+node/|width|={<dimension>}
+node/|name|={<string>}
+node/|padding|={<clist>}
+node/|text color|={<color>}
+node/|text opacity|={<float>}
+node/|frame|={<string>}
+\end{macrodef}
+The position of the node can be adjusted with the \macro{at} option which accepts a point (a tuple). The anchor is specified with the \macro{anchor} option which accepts a comma-separated list of at most two poles that define the anchor point as their intersection (see the explanations on coffins). Available poles are \macro{t}, \macro{b}, \macro{l}, \macro{r}, \macro{vc} and \macro{hc}. The width of the node can be set with the \macro{width} option. The node can be named by setting the \macro{name} option.
+
+Using the \macro{padding} option, the padding between the border of the node and the contents is set. The value is a comma-separated list of one to four dimensions. If four dimensions are given, they apply to the left, right, top and bottom side of the node respectively. If three dimensions are given, the first apples to the left and right side. If two dimensions are given, the first applies to the left and right and the second to the top and bottom sides. If only one dimension is given, it is appled to all four sides.
+
+Using the \macro{text color} option, the color of the node contents is set. The default text color is the current (text) color. The option \macro{text opacity} sets the text opacity. The floating-point number should be in the range of \num{0} and \num{1}. The default text opacity is \num{1} (fully opaque). Note that \macro{\DocumentMetadata} needs to be set in order to activate support for PDF transparency.
+
+Using the \macro{frame} command, the frame surrounding the node text can be selected. Currently, a rectangular and an elliptical frame are available selectable via the values \macro{rectangle} and \macro{ellipse}. The rectangular frame is set per default.
+
+The command \macro{\node} is a shortcut for \macro{\path (0pt, 0pt) node}
+
+\section{Mapping operation}
+
+\begin{macrodef}
+|map|[<options>]{<code>}
+\end{macrodef}
+The \macro{map} operation is used to map over a comma-separated list of items or a range of numbers and execute code for each item that is given by the relevant argument. The code can reference the current item with \macro{#1}. The following options can be set for the command:
+
+\begin{macrodef}
+map/|list|={<clist>}
+map/|start|={<float>}
+map/|end|={<float>}
+map/|step|={<float>}
+\end{macrodef}
+The option \macro{list} sets the command to map over a comma-separated list of items. Each item in the list is passed as an argument to the code.
+
+The option \macro{start} sets the start of the range for mapping over a range of numbers as a floating-point number. The default start is \num{1}. The option \macro{end} sets the end of the range for mapping over a range of numbers as a floating-point number. The default end is \num{1}. The option \macro{step} sets the step for the range for mapping over a range of numbers as a floating-point number. The default step is \num{1}.
+
+The command \macro{\map} is a shortcut for \macro{\path (0pt, 0pt) map}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \fill[fill color=red]
+    map[list={30,150,270}] {
+      (#1:0.75cm) circle[radius=2pt]
+    } ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \map[list={30,150,270}] {
+    [fill, fill color=red]
+    (#1:0.75cm) circle[radius=2pt]
+  } ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \path[stroke, stroke color=blue]
+    (1cm,-1cm) map[list={30,150,270}] {
+      [fill, fill color=red] 
+      -- (#1:0.75cm)
+      circle[radius=2pt]
+    } node[
+      text color=black, 
+      fill, fill color=white, 
+      at={(1cm,-1cm)}, 
+      anchor={t,l}
+    ] {foo} ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\section{Main path options}
+
+\begin{macrodef}
+|\qdrawset|{<options>}
+\end{macrodef}
+The command \macro{\qdrawset} is used to set options for paths. It can be used inside or outside of \macro{qdraw} environments.
+
+The following options can be set for the path:
+
+\subsection{Stroke and fill color, clipping}
+
+\begin{macrodef}
+|stroke|
+|fill|
+|clip|
+\end{macrodef}
+These options add a stroke to the path, fill the path, or use the path as a clipping region for subsequent paths. They can be used in combination. As the clipping region affects all following paths, it is often useful to use it in combination with scopes (see below).
+
+The command \macro{\stroke} is a shortcut for \macro{\path [stroke]}.
+
+The command \macro{\fill} is a shortcut for \macro{\path [fill]}
+
+The command \macro{\clip} is a shortcut for \macro{\path [clip]}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \path[stroke, clip] (30:1cm) 
+    -- (150:1cm) -- (270:1cm) ! ;
+  \fill[fill color={red}] (0cm,0cm) 
+    circle[radius={0.65cm}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{macrodef}
+|stroke color|={<color>}
+|fill color|={<color>}
+|stroke opacity|={<float>}
+|fill opacity|={<float>}
+\end{macrodef}
+The options \macro{stroke color} and \macro{fill color} set the stroke color and the fill color for the path. The default stroke color and fill color is the current (text) color.
+
+The options \macro{stroke opacity} and \macro{fill opacity} set the stroke opacity and the fill opacity for the path. The floating-point number should be in the range of \num{0} and \num{1}. The default stroke opacity and fill opacity is \num{1} (fully opaque). Note that \macro{\DocumentMetadata} needs to be set in order to activate support for PDF transparency.
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \path[
+    fill, fill color={red},
+    stroke, stroke color={blue}
+  ] (0cm,0cm) 
+    rectangle[corner={(1cm,1cm)}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\subsection{Line styling}
+
+\begin{macrodef}
+|line width|={<dimension>}
+\end{macrodef}
+Sets the line width for the path. The default line width is \qty{0.4}{\point}.
+
+\begin{macrodef}
+|line cap|={<string>}
+|line join|={<string>}
+|miter limit|={<float>}
+\end{macrodef}
+The option \macro{line cap} sets the line cap for the path. The possible values are \macro{butt}, \macro{round}, and \macro{rectangle}. The default line cap is \macro{butt}.
+
+The option \macro{line join} sets the line join for the path. The possible values are \macro{miter}, \macro{round}, and \macro{bevel}. The default line join is \macro{miter}.
+
+The option \macro{miter limit} sets the miter limit for the path. The default miter limit is \num{10}.
+
+\begin{macrodef}
+|dash pattern|={<clist>}
+|dash phase|={<dimension>}
+\end{macrodef}
+The option \macro{dash pattern} sets the dash pattern for the path as a comma-separated list of dimensions. Each item in the list is a dimension representing the length of a dash or a gap. The default dash pattern is empty (a solid line).
+
+The option \macro{dash phase} sets the dash phase for the path as a dimension. The default dash phase is \qty{0}{\point}.
+
+\begin{codeexamplecolumns}
+\begin{qdraw}[line width={5pt}]
+  \stroke[line cap={round}]
+    (0cm,0cm) -- (1cm,0cm);
+  \stroke[line join={bevel}]
+    (0cm,-1cm) -- (1cm,-1.5cm)
+    -- (0cm,-2cm) ;
+  \stroke[
+    dash pattern={10pt,5pt},
+    dash phase={2.5pt}
+  ] (0cm,-3cm) -- (1cm,-3cm);
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\subsection{Rounded corners and full rule}
+
+\begin{macrodef}
+|corner arc|={<clist>}
+\end{macrodef}
+The option \macro{corner arc} the corner arc for the path as a comma-separated list of at most two dimensions. The first applies to the corner formed by the path leading into the corner, and the second applies to the corner formed by the path leading out of the corner. If only one dimension is given, it applies to both corners. The default corner arc is \qty{0}{\point} (sharp corners).
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \stroke[corner arc={4pt}] (0:1cm) 
+    map[start={72}, step={72}, end={288}] {
+      -- (#1:1cm)
+    } ! ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{macrodef}
+|fill rule|={<string>}
+\end{macrodef}
+The option \macro{fill rule} sets the fill rule for the path. The possible values are \macro{non-zero} and \macro{even-odd}. The default fill rule is \macro{non-zero}. Note that this option is not influenced by scoping.
+
+\begin{codeexamplecolumns}
+\begin{qdraw}[fill rule={even-odd}]
+  \fill (0cm,0cm)
+    rectangle[corner={(1cm,1cm)}]
+    (0.5cm,0.5cm)
+    circle[radius={0.4cm}];
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\subsection{Transformations}
+
+\begin{macrodef}
+|shift|={<tuple>}
+|rotate|={<float>}
+|scale|={<tuple>}
+|sland|={<tuple>}
+\end{macrodef}
+The option \macro{shift} sets the shift for the path as a tuple of dimensions. The first item in the tuple is the shift in the x-direction, and the second item is the shift in the y-direction. The default shift is (\qty{0}{\point}, \qty{0}{\point}).
+
+The option \macro{rotate} sets the rotation for the path as a floating-point number representing the angle of rotation. The default rotation is \qty{0}{\degree}.
+
+The option \macro{scale} sets the scale for the path as a comma-separated list of at most two floating-point numbers. The first item in the tuple is the scale in the x-direction, and the second item is the scale in the y-direction. If only one number is given, it is used for both directions. The default scale is (\num{1}, \num{1}).
+
+The option \macro{scale} sets the slant for the path as a comma-separated list of at most two floating-point numbers. The first item in the tuple is the slant in the x-direction, and the second item is the slant in the y-direction. If only one number is given, it is used for both directions. The default slant is (\num{0}, \num{0}).
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke, slant={0.25,0.5}]
+      (0cm,0cm) rectangle[corner={(1cm,1cm)}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+% =====
+
+\printchanges
+
+\end{document}

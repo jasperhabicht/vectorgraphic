@@ -580,6 +580,11 @@
     angle ~ start           .initial:n      = { 0 } ,
     angle ~ end             .fp_set:N       = \l_qdraw_path_arc_angle_end_fp ,
     angle ~ end             .initial:n      = { 90 } ,
+    angle ~ delta           .code:n         = {
+        \fp_set:Nn \l_qdraw_path_arc_angle_end_fp {
+            \l_qdraw_path_arc_angle_start_fp + ( #1 )
+        }
+    } ,
 }
 
 \cs_new_protected:cpn { __qdraw_process_path_ a :w } arc #1 [ #2 ] #3 \s_stop {
@@ -687,7 +692,7 @@
 \cs_generate_variant:Nn \draw_coffin_use:Nnnn { NeeV }
 \cs_generate_variant:Nn \coffin_attach:NnnNnnnn { NnnNnnVV }
 
-\keys_define:nn { qdraw / node } {
+\keys_define:nn { qdraw / path / node } {
     at                      .fp_set:N       = \l_qdraw_node_at_fp ,
     name                    .tl_set:N       = \l_qdraw_node_name_tl ,
     anchor                  .clist_set:N    = \l_qdraw_node_anchor_clist ,
@@ -696,7 +701,7 @@
         \bool_set_true:N \l__qdraw_node_vbox_bool
         \dim_set:Nn \l_qdraw_node_width_dim {#1}
     } ,
-    height                  .dim_set:N      = \l_qdraw_node_height_dim ,
+    %height                  .dim_set:N      = \l_qdraw_node_height_dim ,
     padding                 .clist_set:N    = \l_qdraw_node_padding_clist ,
     padding                 .initial:n      = { 5pt } ,
     text ~ color            .str_set:N      = \l_qdraw_node_text_color_str ,
@@ -722,7 +727,7 @@
 \cs_new_protected:Npn \qdraw_node:nn #1#2 {
     \group_begin:
         \fp_set_eq:NN \l_qdraw_node_at_fp \l_qdraw_path_last_point_fp
-        \keys_set_known:nnN { qdraw / node } {#1}
+        \keys_set_known:nnN { qdraw / path / node } {#1}
             \l__qdraw_keys_unprocessed_clist
         \keys_set:nV { qdraw / path } \l__qdraw_keys_unprocessed_clist
         \tl_if_blank:nF \l_qdraw_node_name_tl {
@@ -867,6 +872,7 @@
 
 % ===
 
+\int_new:N \l_qdraw_map_count_int
 \clist_new:N \l_qdraw_map_list_clist
 \fp_new:N \l_qdraw_map_start_fp
 \fp_new:N \l_qdraw_map_step_fp
@@ -874,24 +880,25 @@
 
 \cs_generate_variant:Nn \fp_step_function:nnnN { VVV }
 
-\keys_define:nn { qdraw / map } {
+\keys_define:nn { qdraw /path / map } {
     list                    .clist_set:N    = \l_qdraw_map_list_clist ,
     start                   .fp_set:N       = \l_qdraw_map_start_fp ,
     start                   .initial:n      = { 1 } ,
     step                    .fp_set:N       = \l_qdraw_map_step_fp ,
     step                    .initial:n      = { 1 } ,
     end                     .fp_set:N       = \l_qdraw_map_end_fp ,
-    end                     .initial:n      = { 1 } ,
+    end                     .initial:n      = { 1 }
 }
 
 \cs_new_protected:cpn { __qdraw_process_path_ m :w } map #1 [ #2 ] #3#4 \s_stop {
-    \keys_set:nn { qdraw / map } {#2}
-    \exp_args:NNNNe
+    \keys_set:nn { qdraw / path / map } {#2}
     \cs_set_protected:Npn \__qdraw_map_function:n ##1 {
-        \exp_not:N \path ( \exp_not:V \l_qdraw_path_last_point_fp ) #3 ;
+        \tl_trim_spaces_apply:nN {#3} \__qdraw_continue_path:n
     }
     \int_compare:nNnTF { \clist_count:N \l_qdraw_map_list_clist } > { 0 } {
-        \clist_map_function:NN \l_qdraw_map_list_clist \__qdraw_map_function:n
+        \clist_map_function:NN
+            \l_qdraw_map_list_clist
+            \__qdraw_map_function:n
     } {
         \fp_step_function:VVVN
             \l_qdraw_map_start_fp
@@ -902,7 +909,7 @@
     \tl_trim_spaces_apply:nN {#4} \__qdraw_continue_path:n
 }
 
-\cs_new_protected:Npn \__qdraw_map_function:n #1 { }
+\cs_new:Npn \__qdraw_map_function:n #1 { }
 
 % ===
 
