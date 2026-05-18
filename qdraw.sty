@@ -669,6 +669,7 @@
 
 \bool_new:N \l__qdraw_node_vbox_bool
 \coffin_new:N \l_qdraw_node_coffin
+\coffin_new:N \l_qdraw_node_frame_coffin
 
 \fp_new:N \l_qdraw_node_at_fp
 \tl_new:N \l_qdraw_node_name_tl
@@ -684,6 +685,7 @@
 \str_new:N \l_qdraw_node_frame_str
 
 \cs_generate_variant:Nn \draw_coffin_use:Nnnn { NeeV }
+\cs_generate_variant:Nn \coffin_attach:NnnNnnnn { NnnNnnVV }
 
 \keys_define:nn { qdraw / node } {
     at                      .fp_set:N       = \l_qdraw_node_at_fp ,
@@ -723,7 +725,6 @@
         \keys_set_known:nnN { qdraw / node } {#1}
             \l__qdraw_keys_unprocessed_clist
         \keys_set:nV { qdraw / path } \l__qdraw_keys_unprocessed_clist
-        \qdraw_set_path_options:
         \tl_if_blank:nF \l_qdraw_node_name_tl {
             \prop_gput:cVV { g__qdraw_points_ \int_use:N \g_qdraw_id_int _prop }
                 \l_qdraw_node_name_tl
@@ -737,13 +738,20 @@
                 \normalfont #2
             }
         } {
-            \hcoffin_set:Nn \l_qdraw_node_coffin{
+            \hcoffin_set:Nn \l_qdraw_node_coffin {
                 \color_select:V \l_qdraw_node_text_color_str
                 \normalfont #2
             }
         }
-        \qdraw_node_frame:
-        \draw_coffin_use:NeeV \l_qdraw_node_coffin {
+        \__qdraw_set_node_padding:
+        \__qdraw_set_node_frame:V \l__qdraw_keys_unprocessed_clist
+        \coffin_attach:NnnNnnVV
+            \l_qdraw_node_frame_coffin { l } { b }
+            \l_qdraw_node_coffin { l } { b }
+            \l__qdraw_node_padding_left_dim
+            \l__qdraw_node_padding_bottom_dim
+        \exp_args:Ne
+        \draw_coffin_use:NeeV \l_qdraw_node_frame_coffin {
             \clist_item:Nn \l_qdraw_node_anchor_clist { 1 }
         } {
             \clist_item:Nn \l_qdraw_node_anchor_clist { 2 }
@@ -751,114 +759,111 @@
     \group_end:
 }
 
-\cs_new_protected:Npn \qdraw_node_frame: {
-    \draw_scope_begin:
-        \int_case:nn { \clist_count:N \l_qdraw_node_padding_clist } {
-            { 1 } {
-                \dim_set:Nn \l__qdraw_node_padding_left_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_right_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_top_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_bottom_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
-                }
+\cs_new_protected:Npn \__qdraw_set_node_padding: {
+    \int_case:nn { \clist_count:N \l_qdraw_node_padding_clist } {
+        { 1 } {
+            \dim_set:Nn \l__qdraw_node_padding_left_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
             }
-            { 2 } {
-                \dim_set:Nn \l__qdraw_node_padding_left_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_right_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_top_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 2 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_bottom_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 2 }
-                }
+            \dim_set:Nn \l__qdraw_node_padding_right_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
             }
-            { 3 } {
-                \dim_set:Nn \l__qdraw_node_padding_left_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_right_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_top_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 2 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_bottom_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 3 }
-                }
+            \dim_set:Nn \l__qdraw_node_padding_top_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
             }
-            { 4 } {
-                \dim_set:Nn \l__qdraw_node_padding_left_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_right_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 2 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_top_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 3 }
-                }
-                \dim_set:Nn \l__qdraw_node_padding_bottom_dim {
-                    \clist_item:Nn \l_qdraw_node_padding_clist { 4 }
-                }
+            \dim_set:Nn \l__qdraw_node_padding_bottom_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
             }
         }
-        \use:c { qdraw_node_frame_ \l_qdraw_node_frame_str : }
-        \draw_path_use_clear:e { \clist_use:N \l_qdraw_path_use_clist }
-    \draw_scope_end:
-}
-
-\cs_new_protected:Npn \qdraw_node_frame_rectangle: {
-    \draw_path_rectangle:nn {
-        ( \l_qdraw_node_at_fp ) - (
-            0.5 * (
-                \coffin_wd:N \l_qdraw_node_coffin +
-                \l__qdraw_node_padding_left_dim + \l__qdraw_node_padding_right_dim
-            )
-        ,
-            0.5 * (
-                \coffin_ht:N \l_qdraw_node_coffin + \coffin_dp:N \l_qdraw_node_coffin +
-                \l__qdraw_node_padding_top_dim + \l__qdraw_node_padding_bottom_dim
-            )
-        )
-    } {
-        (
-            \coffin_wd:N \l_qdraw_node_coffin +
-            \l__qdraw_node_padding_left_dim + \l__qdraw_node_padding_right_dim
-        ,
-            \coffin_ht:N \l_qdraw_node_coffin + \coffin_dp:N \l_qdraw_node_coffin +
-            \l__qdraw_node_padding_top_dim + \l__qdraw_node_padding_bottom_dim
-        )
+        { 2 } {
+            \dim_set:Nn \l__qdraw_node_padding_left_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
+            }
+            \dim_set:Nn \l__qdraw_node_padding_right_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
+            }
+            \dim_set:Nn \l__qdraw_node_padding_top_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 2 }
+            }
+            \dim_set:Nn \l__qdraw_node_padding_bottom_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 2 }
+            }
+        }
+        { 3 } {
+            \dim_set:Nn \l__qdraw_node_padding_left_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
+            }
+            \dim_set:Nn \l__qdraw_node_padding_right_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
+            }
+            \dim_set:Nn \l__qdraw_node_padding_top_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 2 }
+            }
+            \dim_set:Nn \l__qdraw_node_padding_bottom_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 3 }
+            }
+        }
+        { 4 } {
+            \dim_set:Nn \l__qdraw_node_padding_left_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 1 }
+            }
+            \dim_set:Nn \l__qdraw_node_padding_right_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 2 }
+            }
+            \dim_set:Nn \l__qdraw_node_padding_top_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 3 }
+            }
+            \dim_set:Nn \l__qdraw_node_padding_bottom_dim {
+                \clist_item:Nn \l_qdraw_node_padding_clist { 4 }
+            }
+        }
     }
 }
 
-\cs_new_protected:Npn \qdraw_node_frame_ellipse: {
-    \draw_path_ellipse:nnn {
-        \l_qdraw_node_at_fp
-    } {
+\cs_new_protected:Npn \__qdraw_set_node_frame:n #1 {
+    \hcoffin_set:Nn \l_qdraw_node_frame_coffin {
+        \draw_suspend_begin:
+            \draw_begin:
+                \keys_set:nn { qdraw / path } {#1}
+                \qdraw_set_path_options:
+                \use:c { qdraw_node_frame_ \l_qdraw_node_frame_str :NVVVV }
+                    \l_qdraw_node_coffin
+                    \l__qdraw_node_padding_left_dim
+                    \l__qdraw_node_padding_right_dim
+                    \l__qdraw_node_padding_top_dim
+                    \l__qdraw_node_padding_bottom_dim
+                \draw_path_use_clear:e { \clist_use:N \l_qdraw_path_use_clist }
+            \draw_end:
+        \draw_suspend_end:
+    }
+}
+\cs_generate_variant:Nn \__qdraw_set_node_frame:n { V }
+
+\cs_new_protected:Npn \qdraw_node_frame_rectangle:Nnnnn #1#2#3#4#5 {
+    \draw_path_rectangle:nn { 0pt , 0pt } {
         (
-            0.5 * (
-                \coffin_wd:N \l_qdraw_node_coffin +
-                \l__qdraw_node_padding_left_dim + \l__qdraw_node_padding_right_dim
-            )
+            \coffin_wd:N #1 + #2 + #3
+        ,
+            \coffin_ht:N #1 + \coffin_dp:N #1 + #4 + #5
+        )
+    }
+    \bool_set_false:N \l_draw_bb_update_bool
+}
+\cs_generate_variant:Nn \qdraw_node_frame_rectangle:Nnnnn { NVVVV }
+
+\cs_new_protected:Npn \qdraw_node_frame_ellipse:Nnnnn #1#2#3#4#5 {
+    \draw_path_ellipse:nnn { 0pt , 0pt } {
+        (
+            0.5 * ( \coffin_wd:N #1 + #2 + #3 )
         , 0pt )
     } {
-        ( 0pt ,
-            0.5 * (
-                \coffin_ht:N \l_qdraw_node_coffin + \coffin_dp:N \l_qdraw_node_coffin +
-                \l__qdraw_node_padding_top_dim + \l__qdraw_node_padding_bottom_dim
-            )
+        ( 0pt , 
+            0.5 * ( \coffin_ht:N #1 + \coffin_dp:N #1 + #4 + #5 )
         )
     }
+    \bool_set_false:N \l_draw_bb_update_bool
 }
+\cs_generate_variant:Nn \qdraw_node_frame_ellipse:Nnnnn { NVVVV }
 
 % ===
 
