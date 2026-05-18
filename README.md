@@ -1,10 +1,10 @@
-# qDraw
+# The `qdraw` package
 
 This LaTeX package allows the user to use a syntax very similar to Ti*k*Z to generate vector graphic output based on the `l3draw` package and related LaTeX3 modules.
 
 The package intends to define a set of user-level commands that can be used for drawing simple graphics. It does not aim to become a substitute for the Ti*k*Z package or to offer a similar scope of application.
 
-> [!CAUTION]
+> [!WARNING]
 > The code in this repository is experimental and as such may be subject to fundamental and frequent changes. Use it at your own risk.
 
 ---
