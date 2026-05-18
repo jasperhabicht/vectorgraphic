@@ -699,6 +699,21 @@ The option \macro{scale} sets the slant for the path as a comma-separated list o
 \end{qdraw}
 \end{codeexamplecolumns}
 
+\section{Setting styles and colors}
+
+\begin{macrodef}
+|style set|={<options>}
+|style add|={<options>}
+\end{macrodef}
+To simplify styling, custom keys can be defined via the keys \macro{style set} and \macro{style add}. Both keys accept as value a key-value list consisting of one or multiple custom keys whose relevant value consists of another key-value list describing the relevant style. It is possible to use \macro{#1} as placeholder for one argument. It is also possible to reference to an already define custom key in the definition of another custom key.
+
+The key \macro{style set} defines custom keys and sets their values. The key \macro{style add} appends the relevant key-value list to the existing custom key as defined by \macro{style set}. Note that it is not checked whether a custom key already exists and its definition will be overwritten without a warning.
+
+\begin{macrodef}
+|\qdrawcolorset|{<color>}{<model>}{<value>}
+\end{macrodef}
+The command \macro{\qdrawcolorset} is used to define colors using the \macro{l3color} module. It is recommended to define custom colors in the preamble of the document. If the model is set to \macro{named}, the command expects as value a color expression.
+
 % =====
 
 \printchanges

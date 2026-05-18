@@ -59,6 +59,10 @@
 }
 % ===
 
+\msg_new:nnn { qdraw } { style-undefined } {
+    The ~ style ~ `#1` ~ is ~ undefined.
+}
+
 \clist_new:N \l__qdraw_keys_unprocessed_clist
 
 \int_new:N \g_qdraw_id_int
@@ -133,6 +137,40 @@
 
 \keys_define:nn { qdraw / scope } {
     layer                   .str_set:N      = \l_qdraw_scope_layer_str ,
+}
+
+\cs_new_protected:Npn \__qdraw_style_set:nn #1#2 {
+    \clist_if_exist:cF { l__qdraw_style_ #1 _value_clist } {
+        \clist_new:c { l__qdraw_style_ #1 _value_clist }
+    }
+    \clist_put_right:cn { l__qdraw_style_ #1 _value_clist } {#2}
+    \keys_define:ne { qdraw / path } {
+        #1                  .meta:n         = {
+            \clist_use:c { l__qdraw_style_ #1 _value_clist }
+        }
+    }
+}
+
+\cs_new_protected:Npn \__qdraw_style_put_right:nn #1#2 {
+    \clist_if_exist:cTF { l__qdraw_style_ #1 _value_clist } {
+        \clist_put_right:cn { l__qdraw_style_ #1 _value_clist } {#2}
+        \keys_define:ne { qdraw / path } {
+            #1              .meta:n         = {
+                \clist_use:c { l__qdraw_style_ #1 _value_clist }
+            }
+        }
+    } {
+        \msg_error:nnn { qdraw } { style-undefined } {#1}
+    }
+}
+
+\keys_define:nn { qdraw / path } {
+    style ~ set             .code:n         = {
+        \keyval_parse:NNn \use:n \__qdraw_style_set:nn {#1}
+    } ,
+    style ~ add             .code:n         = {
+        \keyval_parse:NNn \use:n \__qdraw_style_put_right:nn {#1}
+    } ,
 }
 
 \keys_define:nn { qdraw / path } {
@@ -912,6 +950,14 @@
 \cs_new:Npn \__qdraw_map_function:n #1 { }
 
 % ===
+
+\NewDocumentCommand \qdrawsetcolor { m m m } {
+    \str_if_eq:nnTF {#2} { named } {
+        \color_set:nn {#1} {#3}
+    } {
+        \color_set:nnn {#1} {#2} {#3}
+    }
+}
 
 \NewDocumentCommand \qdrawset { m } {
     \keys_set:nn { qdraw / path } {#1}
