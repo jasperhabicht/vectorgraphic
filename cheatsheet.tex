@@ -152,8 +152,9 @@ This cheatsheet provides an overview of the main commands and options for the \t
 
 \codeexample{
 \begin{qdraw}
-    \path[stroke, stroke color=blue] (1cm,-1cm) map[list={30,150,270}] { [fill, fill color=red] -- (#1:0.75cm) circle[radius=2pt] } ;
+    \path[stroke, stroke color=blue] (1cm,-1cm) map[list={30,150,270}] { [fill, fill color=red] -- (#1:0.75cm) circle[radius=2pt] } node[text color=black, fill, fill color=white, at={(1cm,-1cm)}] {foo} ;
 \end{qdraw}
 }
+
 
 \end{document}
