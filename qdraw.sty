@@ -738,7 +738,7 @@
     \keys_set:nn { qdraw / map } {#2}
     \exp_args:NNNNe
     \cs_set_protected:Npn \__qdraw_map_function:n ##1 {
-        \exp_not:N \path ( \l_qdraw_path_last_point_fp ) #3 ;
+        \exp_not:N \path ( \exp_not:V \l_qdraw_path_last_point_fp ) #3 ;
     }
     \int_compare:nNnTF { \clist_count:N \l_qdraw_map_list_clist } > { 0 } {
         \clist_map_function:NN \l_qdraw_map_list_clist \__qdraw_map_function:n
