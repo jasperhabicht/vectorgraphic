@@ -710,9 +710,9 @@ To simplify styling, custom keys can be defined via the keys \macro{style set} a
 The key \macro{style set} defines custom keys and sets their values. The key \macro{style add} appends the relevant key-value list to the existing custom key as defined by \macro{style set}. Note that it is not checked whether a custom key already exists and its definition will be overwritten without a warning.
 
 \begin{macrodef}
-|\qdrawcolorset|{<color>}{<model>}{<value>}
+|\qdrawsetcolor|{<color>}{<model>}{<value>}
 \end{macrodef}
-The command \macro{\qdrawcolorset} is used to define colors using the \macro{l3color} module. It is recommended to define custom colors in the preamble of the document. If the model is set to \macro{named}, the command expects as value a color expression.
+The command \macro{\qdrawsetcolor} is used to define colors using the \macro{l3color} module. It is recommended to define custom colors in the preamble of the document. If the model is set to \macro{named}, the command expects as value a color expression.
 
 % =====
 
