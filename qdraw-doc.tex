@@ -745,6 +745,7 @@ The following node frames are available, the frame \macro{none} is special as it
 
 \NewDocumentCommand{\nodeframe}{ O{0.5ex} m }{%
   \begin{qdraw}[baseline={#1}]
+    \path (-0.5cm,-0.25cm) rectangle[corner={(1cm,0.5cm)}] ;
     \node[frame={#2}, stroke] {foo} ;
   \end{qdraw}%
 }
