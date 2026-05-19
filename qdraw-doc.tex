@@ -749,7 +749,7 @@ The following node frames are available, the frame \macro{none} is special as it
   \end{qdraw}%
 }
 
-\begin{longtable}{ @{} p{2.5cm} p{\dimexpr\textwidth-\tabcolsep-2.5cm} @{} }
+\begin{longtable}{ @{} p{2.5cm} p{\dimexpr\textwidth-2\tabcolsep-2.5cm} @{} }
   \toprule
   \textbf{Node frame} & \textbf{Name} \\
   \midrule
@@ -1063,13 +1063,13 @@ Arrow tips can be styled using the options \macro{arrow start style} and \macro{
 The following arrow tips are available, of these the last three, \macro{simple}, \macro{straight} and \macro{bar}, should be set together with the option \macro{arrow style={stroke}}:
 
 \NewDocumentCommand{\arrowtip}{ O{fill} m }{%
-  \begin{qdraw}
+  \begin{qdraw}[baseline={0.5ex}]
     \stroke[arrow end={#2}, arrow style={#1}]
       (0cm,0cm) -- (1cm,0cm) ;
   \end{qdraw}%
 }
 
-\begin{longtable}{ @{} p{2.5cm} p{\dimexpr\textwidth-\tabcolsep-2.5cm} @{} }
+\begin{longtable}{ @{} p{2.5cm} p{\dimexpr\textwidth-2\tabcolsep-2.5cm} @{} }
   \toprule
   \textbf{Arrow tip} & \textbf{Name} \\
   \midrule
