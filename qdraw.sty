@@ -62,9 +62,19 @@
 \msg_new:nnn { qdraw } { style-undefined } {
     The ~ style ~ `#1` ~ is ~ undefined.
 }
+\msg_new:nnn { qdraw } { module-missing } {
+    The ~ module ~ `#1` ~ is ~ missing.
+}
 
-\RequirePackage { modules / qdraw-nodes }
-\RequirePackage { modules / qdraw-arrows }
+\cs_new_protected:Npn \qdraw_modules_load:n #1 {
+    \clist_map_inline:nn {#1} {
+        \file_if_exist_input:nF { qdraw- ##1 .code.tex } {
+            \msg_warning:nnn { qdraw } { module-missing } {##1}
+        }
+    }
+}
+
+\qdraw_modules_load:n { nodes , arrows }
 
 % ===
 
