@@ -193,7 +193,7 @@
 
 \NewTCBListing{codeexamplecolumns}{ }{
   text side listing,
-  lefthand width=4.5cm,
+  lefthand width=2.5cm,
   listing style={qdrawdoccodeexample},
   after={\par\smallskip\noindent}
 }
@@ -352,6 +352,8 @@ Options can be for the path using square brackets. The options are the same as f
 \end{macrodef}
 Points on the path can be defined using x and y parts. The first item in the tuple is the x-coordinate, and the second item is the y-coordinate.
 
+Points are per default defined as tuples representing the x- and y-coordinate. If floating-point numbers without unit are used, points are assumed per default. If other units are use, these are converted into points internally. The below alternative representations of points are as well calculated into the default tuple representation:
+
 \begin{macrodef}
 |(|<a>|:|<b>|)|
 |(|<a>|:|<b>|,|<c>|)|
@@ -370,11 +372,32 @@ Points on the path can finally be referenced using names. Points on the path can
 \end{macrodef}
 Using \macro{--} a line to the next point is drawn.
 
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      -- (2cm,1cm) ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
 \begin{macrodef}[][listing style={qdrawdocmacroalt}]
 !|-! (<point>)
 !-|! (<point>)
 \end{macrodef}
 Using \macro{|-} a vertical, then horizontal line to the next point is drawn. Using \macro{-|} a vertical, then horizontal line to the next point is drawn.
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      |- (2cm,1cm) ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      -| (2cm,1cm) ;
+\end{qdraw}
+\end{codeexamplecolumns}
 
 \begin{macrodef}
 |..| (<control point>) |..| (<point>)
@@ -382,10 +405,34 @@ Using \macro{|-} a vertical, then horizontal line to the next point is drawn. Us
 \end{macrodef}
 The above syntax draws a curve to the next point with a single control point or with two control points.
 
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      .. (1cm,1cm) 
+      .. (2cm,1cm);
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      .. (0cm,0.5cm) & (1cm,1cm)
+      .. (2cm,1cm);
+\end{qdraw}
+\end{codeexamplecolumns}
+
 \begin{macrodef}
 |!| (<point>)
 \end{macrodef}
 Using \macro{!} the path is closed by drawing a line from the last point to the first point.
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      -- (2cm,1cm) 
+      -- (0cm,1cm) ! ;
+\end{qdraw}
+\end{codeexamplecolumns}
 
 \bigskip 
 
@@ -401,18 +448,45 @@ circle/|radius|={<dimension>}
 \end{macrodef}
 The radius is specified as a dimension with the \macro{radius} option.
 
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      circle[radius={1cm}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
 \begin{macrodef}
 |ellipse|[<options>]
 \end{macrodef}
 Using the \macro{ellipse} operation, an ellipse is drawn with the current point as center.
 
 \begin{macrodef}
-elllipse/|vector a|={<tuple>}
-elllipse/|vector b|={<tuple>}
 elllipse/|radius a|={<dimension>}
 elllipse/|radius b|={<dimension>}
+elllipse/|vector a|={<tuple>}
+elllipse/|vector b|={<tuple>}
 \end{macrodef}
 The vectors of the ellipse are specified as tuples of dimensions with the \macro{vector a} and \macro{vector b} options. ALternatively, the options \macro{radius a} and \macro{radius b} can be used to define the radii in the x- and y-dimension.
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      ellipse[
+        radius a={1cm},
+        radius b={0.5cm}
+      ] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      ellipse[
+        vector a={(0.5cm,1cm)},
+        vector b={(0.75cm,0cm)}
+      ] ;
+\end{qdraw}
+\end{codeexamplecolumns}
 
 \begin{macrodef}
 |arc|[<options>]
@@ -430,6 +504,41 @@ arc/|angle delta|={<float>}
 \end{macrodef}
 The vectors of the arc are specified as tuples of dimensions with the \macro{vector a} and \macro{vector b} options. ALternatively, the options \macro{radius a} and \macro{radius b} can be used to define the radii in the x- and y-dimension. The angles are specified as dimensions with the \macro{start angle} and \macro{end angle} options. Instead of the \macro{angle end} option, the option \macro{angle delta} can be used.
 
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      arc[
+        radius={1cm},
+        angle start={45},
+        angle end={135}
+      ] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      arc[
+        radius a={1cm},
+        radius b={0.5cm},
+        angle start={45},
+        angle delta={90}
+      ] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      arc[
+        vector a={(0.5cm,1cm)},
+        vector b={(0.75cm,0cm)},
+        angle start={45},
+        angle end={135}
+      ] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
 \begin{macrodef}
 |rectangle|[<options>]
 \end{macrodef}
@@ -440,6 +549,13 @@ rectangle/|corner|={<tuple>}
 rectangle/|relative|={<boolean>}
 \end{macrodef}
 The other corner of the rectangle is specified as a point (a tuple) with the \macro{corner} option. If the boolean option \macro{relative} is set, the corner point is interpreted as relative to the current point instead of absolute.
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      rectangle[corner={(2cm,1cm)}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
 
 \begin{macrodef}
 |grid|[<options>]
@@ -452,6 +568,20 @@ grid/|corner|={<tuple>}
 \end{macrodef}
 
 The step is specified as a comma-separated list of at most two dimensions with the \macro{step} option. The first item in the tuple is the step in the x-direction, and the second item is the step in the y-direction. If only one dimension is given, it is used for both directions. The other corner is specified as a point (a tuple) with the \macro{corner} option. 
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      grid[step={10pt}, corner={(2cm,1cm)}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+    \path[stroke] (0cm,0cm)
+      grid[step={5pt,10pt}, corner={(2cm,1cm)}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
 
 \subsection{Points and nodes}
 
@@ -470,7 +600,7 @@ The command \macro{\point} is a shortcut for \macro{\path (0pt, 0pt) point}
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
-    \path (0,0) point[name=A, at={(1cm,0.5cm)}] ;
+    \path (0,0) point[name={A}, at={(2cm,0.5cm)}] ;
     \path[stroke] (0cm,0cm) -- (A) -- (0cm,1cm) ;
 \end{qdraw}
 \end{codeexamplecolumns}
@@ -492,13 +622,69 @@ node/|frame|={<string>}
 \end{macrodef}
 The position of the node can be adjusted with the \macro{at} option which accepts a point (a tuple). The anchor is specified with the \macro{anchor} option which accepts a comma-separated list of at most two poles that define the anchor point as their intersection (see the explanations on coffins). Available poles are \macro{t}, \macro{b}, \macro{l}, \macro{r}, \macro{vc} and \macro{hc}. The width of the node can be set with the \macro{width} option. The node can be named by setting the \macro{name} option.
 
-Using the \macro{padding} option, the padding between the border of the node and the contents is set. The value is a comma-separated list of one to four dimensions. If four dimensions are given, they apply to the left, right, top and bottom side of the node respectively. If three dimensions are given, the first apples to the left and right side. If two dimensions are given, the first applies to the left and right and the second to the top and bottom sides. If only one dimension is given, it is appled to all four sides.
+Using the \macro{padding} option, the padding between the border of the node and the contents is set. The value is a comma-separated list of one to four dimensions. If four dimensions are given, they apply to the top, left, bottom and right side of the node respectively. If three dimensions are given, the first apples to the top, the second to the left and right side, the third to the bottom. If two dimensions are given, the first applies to the top and bottom and the second to the left and right sides. If only one dimension is given, it is appled to all four sides.
 
 Using the \macro{text color} option, the color of the node contents is set. The default text color is the current (text) color. The option \macro{text opacity} sets the text opacity. The floating-point number should be in the range of \num{0} and \num{1}. The default text opacity is \num{1} (fully opaque). Note that \macro{\DocumentMetadata} needs to be set in order to activate support for PDF transparency.
 
 Using the \macro{frame} command, the frame surrounding the node text can be selected. Currently, a rectangular and an elliptical frame are available selectable via the values \macro{rectangle} and \macro{ellipse}. The rectangular frame is set per default.
 
 The command \macro{\node} is a shortcut for \macro{\path (0pt, 0pt) node}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \node {foo} ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \node[
+    stroke,
+    at={(0cm,2cm)},
+    padding={10pt}
+  ] {foo} ;
+  \node[
+    stroke,
+    at={(1.5cm,2cm)},
+    padding={5pt,10pt}
+  ] {foo} ;
+  \node[
+    stroke,
+    at={(0cm,0cm)},
+    padding={5pt,10pt,15pt}
+  ] {foo} ;
+  \node[
+    stroke,
+    at={(1.5cm,0cm)},
+    padding={5pt,10pt,15pt,0pt}
+  ] {foo} ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \stroke (0cm,0cm) -- (1cm,0.5cm)
+    node[stroke, width={1cm}] {foo} ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \stroke (0cm,0cm) -- (1cm,0.5cm)
+    node[anchor={t,l}, stroke] {foo} ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \stroke (0cm,0cm) -- (1cm,0.5cm)
+    node[
+      fill, fill color={yellow},
+      text color={blue},
+      frame={ellipse}
+    ] {foo} ;
+\end{qdraw}
+\end{codeexamplecolumns}
 
 \section{Mapping operation}
 
@@ -521,35 +707,18 @@ The command \macro{\map} is a shortcut for \macro{\path (0pt, 0pt) map}
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
-  \fill[fill color=red]
-    map[list={30,150,270}] {
-      (#1:0.75cm) circle[radius=2pt]
-    } ;
-\end{qdraw}
-\end{codeexamplecolumns}
-
-\begin{codeexamplecolumns}
-\begin{qdraw}
-  \map[list={30,150,270}] {
-    [fill, fill color=red]
-    (#1:0.75cm) circle[radius=2pt]
+  \map[list={30,150,270}] { [fill]
+    (#1:0.75cm) circle[radius={5pt}]
   } ;
 \end{qdraw}
 \end{codeexamplecolumns}
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
-  \path[stroke, stroke color=blue]
-    (1cm,-1cm) map[list={30,150,270}] {
-      [fill, fill color=red] 
-      -- (#1:0.75cm)
-      circle[radius=2pt]
-    } node[
-      text color=black, 
-      fill, fill color=white, 
-      at={(1cm,-1cm)}, 
-      anchor={t,l}
-    ] {foo} ;
+  \fill
+    map[start={30}, step={120}, end={270}] {
+      (#1:0.75cm) circle[radius={5pt}]
+    } ;
 \end{qdraw}
 \end{codeexamplecolumns}
 
@@ -579,10 +748,10 @@ The command \macro{\clip} is a shortcut for \macro{\path [clip]}
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
-  \path[stroke, clip] (30:1cm) 
-    -- (150:1cm) -- (270:1cm) ! ;
-  \fill[fill color={red}] (0cm,0cm) 
-    circle[radius={0.65cm}] ;
+  \path[stroke, clip] (0cm,0cm)
+    rectangle[corner={(2cm,1cm)}] ;
+  \fill (1cm,0.5cm)
+    circle[radius={0.6cm}] ;
 \end{qdraw}
 \end{codeexamplecolumns}
 
@@ -597,12 +766,12 @@ The options \macro{stroke color} and \macro{fill color} set the stroke color and
 The options \macro{stroke opacity} and \macro{fill opacity} set the stroke opacity and the fill opacity for the path. The floating-point number should be in the range of \num{0} and \num{1}. The default stroke opacity and fill opacity is \num{1} (fully opaque). Note that \macro{\DocumentMetadata} needs to be set in order to activate support for PDF transparency.
 
 \begin{codeexamplecolumns}
-\begin{qdraw}
+\begin{qdraw}[line width={5pt}]
   \path[
-    fill, fill color={red},
+    fill, fill color={yellow},
     stroke, stroke color={blue}
   ] (0cm,0cm) 
-    rectangle[corner={(1cm,1cm)}] ;
+    rectangle[corner={(2cm,1cm)}] ;
 \end{qdraw}
 \end{codeexamplecolumns}
 
@@ -612,6 +781,20 @@ The options \macro{stroke opacity} and \macro{fill opacity} set the stroke opaci
 |line width|={<dimension>}
 \end{macrodef}
 Sets the line width for the path. The default line width is \qty{0.4}{\point}.
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \stroke
+    (0cm,0cm) -- (2cm,1cm);
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \stroke[line width={5pt}]
+    (0cm,0cm) -- (2cm,1cm) ;
+\end{qdraw}
+\end{codeexamplecolumns}
 
 \begin{macrodef}
 |line cap|={<string>}
@@ -624,6 +807,21 @@ The option \macro{line join} sets the line join for the path. The possible value
 
 The option \macro{miter limit} sets the miter limit for the path. The default miter limit is \num{10}.
 
+\begin{codeexamplecolumns}
+\begin{qdraw}[line width={5pt}]
+  \stroke[line cap={round}]
+    (0cm,0cm) -- (2cm,1cm) ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}[line width={5pt}]
+  \stroke[line join={bevel}]
+    (0cm,0cm) -- (2cm,0.5cm)
+    -- (0cm,1cm) ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
 \begin{macrodef}
 |dash pattern|={<clist>}
 |dash phase|={<dimension>}
@@ -633,16 +831,11 @@ The option \macro{dash pattern} sets the dash pattern for the path as a comma-se
 The option \macro{dash phase} sets the dash phase for the path as a dimension. The default dash phase is \qty{0}{\point}.
 
 \begin{codeexamplecolumns}
-\begin{qdraw}[line width={5pt}]
-  \stroke[line cap={round}]
-    (0cm,0cm) -- (1cm,0cm);
-  \stroke[line join={bevel}]
-    (0cm,-1cm) -- (1cm,-1.5cm)
-    -- (0cm,-2cm) ;
+\begin{qdraw}
   \stroke[
     dash pattern={10pt,5pt},
     dash phase={2.5pt}
-  ] (0cm,-3cm) -- (1cm,-3cm);
+  ] (0cm,0cm) -- (2cm,1cm) ;
 \end{qdraw}
 \end{codeexamplecolumns}
 
@@ -655,10 +848,8 @@ The option \macro{corner arc} the corner arc for the path as a comma-separated l
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
-  \stroke[corner arc={4pt}] (0:1cm) 
-    map[start={72}, step={72}, end={288}] {
-      -- (#1:1cm)
-    } ! ;
+  \stroke[corner arc={5pt}] (0cm,0cm)
+    rectangle[corner={(2cm,1cm)}] ;
 \end{qdraw}
 \end{codeexamplecolumns}
 
@@ -670,9 +861,9 @@ The option \macro{fill rule} sets the fill rule for the path. The possible value
 \begin{codeexamplecolumns}
 \begin{qdraw}[fill rule={even-odd}]
   \fill (0cm,0cm)
-    rectangle[corner={(1cm,1cm)}]
-    (0.5cm,0.5cm)
-    circle[radius={0.4cm}];
+    rectangle[corner={(2cm,1cm)}]
+    (1cm,0.5cm)
+    circle[radius={0.4cm}] ;
 \end{qdraw}
 \end{codeexamplecolumns}
 
@@ -694,8 +885,31 @@ The option \macro{scale} sets the slant for the path as a comma-separated list o
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
-    \path[stroke, slant={0.25,0.5}]
-      (0cm,0cm) rectangle[corner={(1cm,1cm)}] ;
+  \stroke[stroke color={blue}]
+    (0cm,0cm) rectangle[corner={(2cm,1cm)}] ;
+  \stroke[shift={(5pt,10pt)}] 
+    (0cm,0cm) rectangle[corner={(2cm,1cm)}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \stroke[scale={0.25,0.5}]
+    (0cm,0cm) rectangle[corner={(2cm,1cm)}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \stroke[rotate={20}]
+    (0cm,0cm) rectangle[corner={(2cm,1cm)}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \stroke[slant={0.25,0.5}]
+    (0cm,0cm) rectangle[corner={(2cm,1cm)}] ;
 \end{qdraw}
 \end{codeexamplecolumns}
 
@@ -709,10 +923,35 @@ To simplify styling, custom keys can be defined via the keys \macro{style set} a
 
 The key \macro{style set} defines custom keys and sets their values. The key \macro{style add} appends the relevant key-value list to the existing custom key as defined by \macro{style set}. Note that it is not checked whether a custom key already exists and its definition will be overwritten without a warning.
 
+\begin{codeexamplecolumns}
+\begin{qdraw}[
+  style set={
+    mystyle={
+      stroke, stroke color={blue},
+      line width={5pt}
+    }
+  }
+]
+  \path[mystyle]
+    (0cm,0cm) -- (2cm,1cm) ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
 \begin{macrodef}
 |\qdrawsetcolor|{<color>}{<model>}{<value>}
 \end{macrodef}
 The command \macro{\qdrawsetcolor} is used to define colors using the \macro{l3color} module. It is recommended to define custom colors in the preamble of the document. If the model is set to \macro{named}, the command expects as value a color expression.
+
+\begin{codeexamplecolumns}
+\qdrawsetcolor{colorA}{rgb}{0.1,0.5,0.8}
+\qdrawsetcolor{colorB}{named}{yellow!90!red}
+\begin{qdraw}[line width={5pt}]
+  \path[
+    stroke, stroke color={colorA},
+    fill, fill color={colorB}
+  ] (0cm,0cm) rectangle[corner={(2cm,1cm)}] ;
+\end{qdraw}
+\end{codeexamplecolumns}
 
 % =====
 
