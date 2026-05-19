@@ -320,23 +320,23 @@ Similar to Ti\emph{k}Z, the \macro{qdraw} package makes use of key-value pairs t
 The \macro{qdraw} environment is the main environment for drawing. It defines most other commands described in the following sections. The following options can be set for the \macro{qdraw} environment:
 
 \begin{macrodef}
-instance/|baseline|={<dimension>}
+!instance/!|baseline|={<dimension>}
 \end{macrodef}
 The option \macro{baseline} sets the baseline for the environment as dimension. The default baseline is typically the bottom of the the bounding box of the drawing.
 
 \begin{macrodef}
-instance/|layers|={<clist>}
+!instance/!|layers|={<clist>}
 \end{macrodef}
 The option \macro{layers} sets the layers for the environment as a comma-separated list. The layer \macro{main} must always be present and is the default layer. Layers are drawn in the order they are defined (see \hyperlink{sec:scopes}{below}).
 
 \begin{macrodef}
-instance/|overlay|={<boolean>}
+!instance/!|overlay|={<boolean>}
 \end{macrodef}
 The option \macro{overlay} sets the environment to have a zero-sized bounding box.
 
 \begin{codeexamplecolumns}
 foo
-\begin{qdraw}[overlay, baseline={-0.5cm}]
+\begin{qdraw}[overlay, baseline={0.5ex}]
   \stroke[stroke color={blue}]
     (0cm,0cm) circle[radius={0.5cm}] ;
 \end{qdraw}
@@ -362,7 +362,7 @@ The \macro{scope} environment is only available inside the \macro{qdraw} environ
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-scope/|layer|={<string>}
+!scope/!|layer|={<string>}
 \end{macrodef}
 The option \macro{layer} sets the scope to be placed on the relevant layer. The layer must be defined beforehand using the \macro{layers} option.
 
@@ -467,7 +467,7 @@ The above syntax draws a curve to the next point with a single control point or 
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-|!| (<point>)
+|!|
 \end{macrodef}
 Using \macro{!} the path is closed by drawing a line from the last point to the first point.
 
@@ -489,7 +489,7 @@ The following path operations require at least one option to be set:
 Using the \macro{circle} operation, a circle is drawn with the current point as center.
 
 \begin{macrodef}
-path/circle/|radius|={<dimension>}
+!path/circle/!|radius|={<dimension>}
 \end{macrodef}
 The radius is specified as a dimension with the \macro{radius} option.
 
@@ -501,15 +501,15 @@ The radius is specified as a dimension with the \macro{radius} option.
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-path/|ellipse|[<options>]
+|ellipse|[<options>]
 \end{macrodef}
 Using the \macro{ellipse} operation, an ellipse is drawn with the current point as center.
 
 \begin{macrodef}
-path/ellipse/|radius a|={<dimension>}
-path/ellipse/|radius b|={<dimension>}
-path/ellipse/|vector a|={<tuple>}
-path/ellipse/|vector b|={<tuple>}
+!path/ellipse/!|radius a|={<dimension>}
+!path/ellipse/!|radius b|={<dimension>}
+!path/ellipse/!|vector a|={<tuple>}
+!path/ellipse/!|vector b|={<tuple>}
 \end{macrodef}
 The vectors of the ellipse are specified as tuples of dimensions with the \macro{vector a} and \macro{vector b} options. ALternatively, the options \macro{radius a} and \macro{radius b} can be used to define the radii in the x- and y-dimension.
 
@@ -517,8 +517,8 @@ The vectors of the ellipse are specified as tuples of dimensions with the \macro
 \begin{qdraw}
   \path[stroke] (0cm,0cm)
     ellipse[
-      radius a={1cm},
-      radius b={0.5cm}
+      radius a={0.5cm},
+      radius b={1cm}
     ] ;
 \end{qdraw}
 \end{codeexamplecolumns}
@@ -539,13 +539,13 @@ The vectors of the ellipse are specified as tuples of dimensions with the \macro
 Using the \macro{arc} operation, an arc is drawn with the current point as origin.
 
 \begin{macrodef}
-path/arc/|vector a|={<tuple>}
-path/arc/|vector b|={<tuple>}
-path/arc/|radius a|={<dimension>}
-path/arc/|radius b|={<dimension>}
-path/arc/|angle start|={<float>}
-path/arc/|angle end|={<float>}
-path/arc/|angle delta|={<float>}
+!path/arc/!|vector a|={<tuple>}
+!path/arc/!|vector b|={<tuple>}
+!path/arc/!|radius a|={<dimension>}
+!path/arc/!|radius b|={<dimension>}
+!path/arc/!|angle start|={<float>}
+!path/arc/!|angle end|={<float>}
+!path/arc/!|angle delta|={<float>}
 \end{macrodef}
 The vectors of the arc are specified as tuples of dimensions with the \macro{vector a} and \macro{vector b} options. ALternatively, the options \macro{radius a} and \macro{radius b} can be used to define the radii in the x- and y-dimension. The angles are specified as dimensions with the \macro{start angle} and \macro{end angle} options. Instead of the \macro{angle end} option, the option \macro{angle delta} can be used.
 
@@ -564,8 +564,8 @@ The vectors of the arc are specified as tuples of dimensions with the \macro{vec
 \begin{qdraw}
   \path[stroke] (0cm,0cm)
     arc[
-      radius a={1cm},
-      radius b={0.5cm},
+      radius a={0.5cm},
+      radius b={1cm},
       angle start={45},
       angle delta={90}
     ] ;
@@ -590,8 +590,8 @@ The vectors of the arc are specified as tuples of dimensions with the \macro{vec
 Using the \macro{rectangle} operation, an rectangle with the current point as origin corner is drawn.
 
 \begin{macrodef}
-path/rectangle/|corner|={<tuple>}
-path/rectangle/|relative|={<boolean>}
+!path/rectangle/!|corner|={<tuple>}
+!path/rectangle/!|relative|={<boolean>}
 \end{macrodef}
 The other corner of the rectangle is specified as a point (a tuple) with the \macro{corner} option. If the boolean option \macro{relative} is set, the corner point is interpreted as relative to the current point instead of absolute.
 
@@ -608,8 +608,8 @@ The other corner of the rectangle is specified as a point (a tuple) with the \ma
 Using the \macro{grid} operation, a grid with the current point as origin corner is drawn.
 
 \begin{macrodef}
-path/grid/|step|={<tuple>}
-path/grid/|corner|={<tuple>}
+!path/gridf/!|step|={<tuple>}
+!path/gridf/!|corner|={<tuple>}
 \end{macrodef}
 
 The step is specified as a comma-separated list of at most two dimensions with the \macro{step} option. The first item in the tuple is the step in the x-direction, and the second item is the step in the y-direction. If only one dimension is given, it is used for both directions. The other corner is specified as a point (a tuple) with the \macro{corner} option. 
@@ -636,8 +636,8 @@ The step is specified as a comma-separated list of at most two dimensions with t
 Using the \macro{point} operation, a point at the current position is defined and named with the given name.
 
 \begin{macrodef}
-path/point/|at|={<tuple>}
-path/point/|name|={<string>}
+!path/point/!|at|={<tuple>}
+!path/point/!|name|={<string>}
 \end{macrodef}
 The position of the point can be adjusted with the \macro{at} option which accepts a point (a tuple). The point can be referenced later by using the name in parentheses (see \hyperlink{macro:point}{above}). 
 
@@ -656,9 +656,9 @@ The command \macro{\point} is a shortcut for \macro{\path (0pt, 0pt) point}
 Using the \macro{node} operation, a node at the current position is defined and assigned the relevant content by the relevant argument.
 
 \begin{macrodef}
-path/node/|at|={<tuple>}
-path/node/|anchor|={<clist>}
-path/node/|name|={<string>}
+!path/node/!|at|={<tuple>}
+!path/node/!|anchor|={<clist>}
+!path/node/!|name|={<string>}
 \end{macrodef}
 The position of the node can be adjusted with the \macro{at} option which accepts a point (a tuple). The anchor is specified with the \macro{anchor} option which accepts a comma-separated list of at most two poles that define the anchor point as their intersection (see the explanations on coffins). Available poles are \macro{t}, \macro{b}, \macro{l}, \macro{r}, \macro{vc} and \macro{hc}. The node can be named by setting the \macro{name} option.
 
@@ -676,7 +676,7 @@ The position of the node can be adjusted with the \macro{at} option which accept
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-path/node/|width|={<dimension>}
+!path/node/!|width|={<dimension>}
 \end{macrodef}
 The width of the node can be set with the \macro{width} option.
 
@@ -688,7 +688,7 @@ The width of the node can be set with the \macro{width} option.
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-path/node/|padding|={<clist>}
+!path/node/!|padding|={<clist>}
 \end{macrodef}
 Using the \macro{padding} option, the padding between the border of the node and the contents is set. The value is a comma-separated list of one to four dimensions. If four dimensions are given, they apply to the top, left, bottom and right side of the node respectively. If three dimensions are given, the first apples to the top, the second to the left and right side, the third to the bottom. If two dimensions are given, the first applies to the top and bottom and the second to the left and right sides. If only one dimension is given, it is appled to all four sides.
 
@@ -718,15 +718,15 @@ Using the \macro{padding} option, the padding between the border of the node and
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-path/node/|text color|={<color>}
-path/node/|text opacity|={<float>}
+!path/node/!|text color|={<color>}
+!path/node/!|text opacity|={<float>}
 \end{macrodef}
 Using the \macro{text color} option, the color of the node contents is set. The default text color is the current (text) color. The option \macro{text opacity} sets the text opacity. The floating-point number should be in the range of \num{0} and \num{1}. The default text opacity is \num{1} (fully opaque). Note that \macro{\DocumentMetadata{}} needs to be set in order to activate support for PDF transparency.
 
 \begin{macrodef}
-path/node/|frame|={<string>}
+!path/node/!|frame|={<string>}
 \end{macrodef}
-Using the \macro{frame} command, the frame surrounding the node text can be selected. Currently, a rectangular and an elliptical frame are available selectable via the values \macro{rectangle} and \macro{ellipse}. The rectangular frame is set per default. All options that are available for paths are also available for node frames.
+Using the \macro{frame} command, the frame surrounding the node text can be selected. The frame \macro{rectangle} is set per default. All options that are available for paths are also available for node frames.
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
@@ -739,7 +739,27 @@ Using the \macro{frame} command, the frame surrounding the node text can be sele
 \end{qdraw}
 \end{codeexamplecolumns}
 
-The command \macro{\node} is a shortcut for \macro{\path (0pt, 0pt) node}
+The command \macro{\node} is a shortcut for \macro{\path (0pt,0pt) node}
+
+The following node frames are available, the frame \macro{none} is special as it removes the bounding box from the node altogether:
+
+\NewDocumentCommand{\nodeframe}{ O{0.5ex} m }{%
+  \begin{qdraw}[baseline={#1}]
+    \node[frame={#2}, stroke] {foo} ;
+  \end{qdraw}%
+}
+
+\begin{longtable}{ @{} p{2.5cm} p{\dimexpr\textwidth-\tabcolsep-2.5cm} @{} }
+  \toprule
+  \textbf{Node frame} & \textbf{Name} \\
+  \midrule
+  \nodeframe{none} & \macro{none} \\
+  \nodeframe{rectangle} & \macro{rectangle} \\
+  \nodeframe{ellipse} & \macro{ellipse} \\
+  \nodeframe{circle} & \macro{circle} \\
+  \nodeframe{diamond} & \macro{diamond} \\
+  \bottomrule
+\end{longtable}
 
 \section{Mapping operation}
 
@@ -749,31 +769,31 @@ The command \macro{\node} is a shortcut for \macro{\path (0pt, 0pt) node}
 The \macro{map} operation is used to map over a comma-separated list of items or a range of numbers and execute code for each item that is given by the relevant argument. The code can reference the current item with \macro{#1}. The following options can be set for the command:
 
 \begin{macrodef}
-path/map/|list|={<clist>}
-path/map/|start|={<float>}
-path/map/|end|={<float>}
-path/map/|step|={<float>}
+!path/map/!|list|={<clist>}
+!path/map/!|start|={<float>}
+!path/map/!|end|={<float>}
+!path/map/!|step|={<float>}
 \end{macrodef}
 The option \macro{list} sets the command to map over a comma-separated list of items. Each item in the list is passed as an argument to the code.
-
-The option \macro{start} sets the start of the range for mapping over a range of numbers as a floating-point number. The default start is \num{1}. The option \macro{end} sets the end of the range for mapping over a range of numbers as a floating-point number. The default end is \num{1}. The option \macro{step} sets the step for the range for mapping over a range of numbers as a floating-point number. The default step is \num{1}.
-
-The command \macro{\map} is a shortcut for \macro{\path (0pt, 0pt) map}
-
-\begin{codeexamplecolumns}
-\begin{qdraw}
-  \map[list={30,150,270}] { [fill]
-    (#1:0.75cm) circle[radius={5pt}]
-  } ;
-\end{qdraw}
-\end{codeexamplecolumns}
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
   \fill
-    map[start={30}, step={120}, end={270}] {
+    map[list={30,150,270}] {
       (#1:0.75cm) circle[radius={5pt}]
     } ;
+\end{qdraw}
+\end{codeexamplecolumns}
+
+The option \macro{start} sets the start of the range for mapping over a range of numbers as a floating-point number. The default start is \num{1}. The option \macro{end} sets the end of the range for mapping over a range of numbers as a floating-point number. The default end is \num{1}. The option \macro{step} sets the step for the range for mapping over a range of numbers as a floating-point number. The default step is \num{1}.
+
+The command \macro{\map} is a shortcut for \macro{\path (0pt,0pt) map}
+
+\begin{codeexamplecolumns}
+\begin{qdraw}
+  \map[start={30}, step={120}, end={270}] { [fill]
+    (#1:0.75cm) circle[radius={5pt}]
+  } ;
 \end{qdraw}
 \end{codeexamplecolumns}
 
@@ -789,9 +809,9 @@ The following options can be set for the path:
 \subsection{Stroke and fill color, clipping}
 
 \begin{macrodef}
-path/|stroke|
-path/|fill|
-path/|clip|
+!path/!|stroke|
+!path/!|fill|
+!path/!|clip|
 \end{macrodef}
 These options add a stroke to the path, fill the path, or use the path as a clipping region for subsequent paths. They can be used in combination. As the clipping region affects all following paths, it is often useful to use it in combination with scopes (see \hyperlink{sec:scopes}{above}).
 
@@ -811,14 +831,12 @@ The command \macro{\clip} is a shortcut for \macro{\path [clip]}
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-path/|stroke color|={<color>}
-path/|fill color|={<color>}
-path/|stroke opacity|={<float>}
-path/|fill opacity|={<float>}
+!path/!|stroke color|={<color>}
+!path/!|fill color|={<color>}
+!path/!|stroke opacity|={<float>}
+!path/!|fill opacity|={<float>}
 \end{macrodef}
 The options \macro{stroke color} and \macro{fill color} set the stroke color and the fill color for the path. The default stroke color and fill color is the current (text) color.
-
-The options \macro{stroke opacity} and \macro{fill opacity} set the stroke opacity and the fill opacity for the path. The floating-point number should be in the range of \num{0} and \num{1}. The default stroke opacity and fill opacity is \num{1} (fully opaque). Note that \macro{\DocumentMetadata} needs to be set in order to activate support for PDF transparency.
 
 \begin{codeexamplecolumns}
 \begin{qdraw}[line width={5pt}]
@@ -830,10 +848,12 @@ The options \macro{stroke opacity} and \macro{fill opacity} set the stroke opaci
 \end{qdraw}
 \end{codeexamplecolumns}
 
+The options \macro{stroke opacity} and \macro{fill opacity} set the stroke opacity and the fill opacity for the path. The floating-point number should be in the range of \num{0} and \num{1}. The default stroke opacity and fill opacity is \num{1} (fully opaque). Note that \macro{\DocumentMetadata{}} needs to be set in order to activate support for PDF transparency.
+
 \subsection{Line styling}
 
 \begin{macrodef}
-path/|line width|={<dimension>}
+!path/!|line width|={<dimension>}
 \end{macrodef}
 Sets the line width for the path. The default line width is \qty{0.4}{\point}.
 
@@ -852,15 +872,11 @@ Sets the line width for the path. The default line width is \qty{0.4}{\point}.
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-path/|line cap|={<string>}
-path/|line join|={<string>}
-path/|miter limit|={<float>}
+!path/!|line cap|={<string>}
+!path/!|line join|={<string>}
+!path/!|miter limit|={<float>}
 \end{macrodef}
 The option \macro{line cap} sets the line cap for the path. The possible values are \macro{butt}, \macro{round}, and \macro{rectangle}. The default line cap is \macro{butt}.
-
-The option \macro{line join} sets the line join for the path. The possible values are \macro{miter}, \macro{round}, and \macro{bevel}. The default line join is \macro{miter}.
-
-The option \macro{miter limit} sets the miter limit for the path. The default miter limit is \num{10}.
 
 \begin{codeexamplecolumns}
 \begin{qdraw}[line width={5pt}]
@@ -868,6 +884,10 @@ The option \macro{miter limit} sets the miter limit for the path. The default mi
     (0cm,0cm) -- (2cm,1cm) ;
 \end{qdraw}
 \end{codeexamplecolumns}
+
+The option \macro{line join} sets the line join for the path. The possible values are \macro{miter}, \macro{round}, and \macro{bevel}. The default line join is \macro{miter}.
+
+The option \macro{miter limit} sets the miter limit for the path. The default miter limit is \num{10}.
 
 \begin{codeexamplecolumns}
 \begin{qdraw}[line width={5pt}]
@@ -878,8 +898,8 @@ The option \macro{miter limit} sets the miter limit for the path. The default mi
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-path/|dash pattern|={<clist>}
-path/|dash phase|={<dimension>}
+!path/!|dash pattern|={<clist>}
+!path/!|dash phase|={<dimension>}
 \end{macrodef}
 The option \macro{dash pattern} sets the dash pattern for the path as a comma-separated list of dimensions. Each item in the list is a dimension representing the length of a dash or a gap. The default dash pattern is empty (a solid line).
 
@@ -897,7 +917,7 @@ The option \macro{dash phase} sets the dash phase for the path as a dimension. T
 \subsection{Rounded corners and full rule}
 
 \begin{macrodef}
-path/|corner arc|={<clist>}
+!path/!|corner arc|={<clist>}
 \end{macrodef}
 The option \macro{corner arc} the corner arc for the path as a comma-separated list of at most two dimensions. The first applies to the corner formed by the path leading into the corner, and the second applies to the corner formed by the path leading out of the corner. If only one dimension is given, it applies to both corners. The default corner arc is \qty{0}{\point} (sharp corners).
 
@@ -909,7 +929,7 @@ The option \macro{corner arc} the corner arc for the path as a comma-separated l
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-path/|fill rule|={<string>}
+!path/!|fill rule|={<string>}
 \end{macrodef}
 The option \macro{fill rule} sets the fill rule for the path. The possible values are \macro{non-zero} and \macro{even-odd}. The default fill rule is \macro{non-zero}. Note that this option is not influenced by scoping.
 
@@ -925,18 +945,12 @@ The option \macro{fill rule} sets the fill rule for the path. The possible value
 \subsection{Transformations}
 
 \begin{macrodef}
-path/|shift|={<tuple>}
-path/|rotate|={<float>}
-path/|scale|={<tuple>}
-path/|slant|={<tuple>}
+!path/!|shift|={<tuple>}
+!path/!|rotate|={<float>}
+!path/!|scale|={<tuple>}
+!path/!|slant|={<tuple>}
 \end{macrodef}
 The option \macro{shift} sets the shift for the path as a tuple of dimensions. The first item in the tuple is the shift in the x-direction, and the second item is the shift in the y-direction. The default shift is (\qty{0}{\point}, \qty{0}{\point}).
-
-The option \macro{rotate} sets the rotation for the path as a floating-point number representing the angle of rotation. The default rotation is \qty{0}{\degree}.
-
-The option \macro{scale} sets the scale for the path as a comma-separated list of at most two floating-point numbers. The first item in the tuple is the scale in the x-direction, and the second item is the scale in the y-direction. If only one number is given, it is used for both directions. The default scale is (\num{1}, \num{1}).
-
-The option \macro{scale} sets the slant for the path as a comma-separated list of at most two floating-point numbers. The first item in the tuple is the slant in the x-direction, and the second item is the slant in the y-direction. If only one number is given, it is used for both directions. The default slant is (\num{0}, \num{0}).
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
@@ -947,6 +961,8 @@ The option \macro{scale} sets the slant for the path as a comma-separated list o
 \end{qdraw}
 \end{codeexamplecolumns}
 
+The option \macro{rotate} sets the rotation for the path as a floating-point number representing the angle of rotation. The default rotation is \qty{0}{\degree}.
+
 \begin{codeexamplecolumns}
 \begin{qdraw}
   \stroke[scale={0.25,0.5}]
@@ -954,12 +970,16 @@ The option \macro{scale} sets the slant for the path as a comma-separated list o
 \end{qdraw}
 \end{codeexamplecolumns}
 
+The option \macro{scale} sets the scale for the path as a comma-separated list of at most two floating-point numbers. The first item in the tuple is the scale in the x-direction, and the second item is the scale in the y-direction. If only one number is given, it is used for both directions. The default scale is (\num{1}, \num{1}).
+
 \begin{codeexamplecolumns}
 \begin{qdraw}
   \stroke[rotate={20}]
     (0cm,0cm) rectangle[corner={(2cm,1cm)}] ;
 \end{qdraw}
 \end{codeexamplecolumns}
+
+The option \macro{slant} sets the slant for the path as a comma-separated list of at most two floating-point numbers. The first item in the tuple is the slant in the x-direction, and the second item is the slant in the y-direction. If only one number is given, it is used for both directions. The default slant is (\num{0}, \num{0}).
 
 \begin{codeexamplecolumns}
 \begin{qdraw}
@@ -971,8 +991,8 @@ The option \macro{scale} sets the slant for the path as a comma-separated list o
 \section{Setting styles and colors}
 
 \begin{macrodef}
-path/|style set|={<options>}
-path/|style add|={<options>}
+!path/!|style set|={<options>}
+!path/!|style add|={<options>}
 \end{macrodef}
 To simplify styling, custom keys can be defined via the keys \macro{style set} and \macro{style add}. Both keys accept as value a key-value list consisting of one or multiple custom keys whose relevant value consists of another key-value list describing the relevant style. It is possible to use \macro{#1} as placeholder for one argument. It is also possible to reference to an already define custom key in the definition of another custom key.
 
@@ -1011,8 +1031,8 @@ The command \macro{\qdrawsetcolor} is used to define colors using the \macro{l3c
 \subsection{Arrow tips}
 
 \begin{macrodef}
-path/|arrow start|={<string>}
-path/|arrow end|={<string>}
+!path/!|arrow start|={<string>}
+!path/!|arrow end|={<string>}
 \end{macrodef}
 The options \macro{arrow start} and \macro{arrow end} set an arrow tip to the start and the end of the current path respectively. Both keys take as value a string representing the name of the relevant arrow tip. The \macro{default} arrow tip is selected per default. Arrow tips are not attached to single points or closed paths.
 
@@ -1024,9 +1044,9 @@ The options \macro{arrow start} and \macro{arrow end} set an arrow tip to the st
 \end{codeexamplecolumns}
 
 \begin{macrodef}
-path/|arrow style|={<options>}
-path/|arrow start style|={<options>}
-path/|arrow end style|={<options>}
+!path/!|arrow style|={<options>}
+!path/!|arrow start style|={<options>}
+!path/!|arrow end style|={<options>}
 \end{macrodef}
 Arrow tips can be styled using the options \macro{arrow start style} and \macro{arrow end style}. The option \macro{arrow style} sets the same style for start and end arrow tips. All options that are available for paths are also available for arrow tips.
 
@@ -1040,7 +1060,7 @@ Arrow tips can be styled using the options \macro{arrow start style} and \macro{
 \end{qdraw}
 \end{codeexamplecolumns}
 
-The following arrow tips are available, of these the last three, \macro{simple}, \macro{straight} and \macro{bar}, should be set together with the option \macro{arrow style={stroke}}
+The following arrow tips are available, of these the last three, \macro{simple}, \macro{straight} and \macro{bar}, should be set together with the option \macro{arrow style={stroke}}:
 
 \NewDocumentCommand{\arrowtip}{ O{fill} m }{%
   \begin{qdraw}
