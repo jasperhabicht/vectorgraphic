@@ -392,6 +392,10 @@ Options can be for the path using square brackets. The options are the same as f
 
 \subsection{Points on the path}
 
+Generally, the package makes use of the \macro{l3fp} module of the LaTeX kernel. As such, it is possible to execute calculations on the fly to define the points. The basic form of a point is a tuple of two expressions resulting in a floating-point number where both expressions are separated by a comma.
+
+It is advisable to enclose the two expressions of the tuple in curly braces in cases where complicated calculations should be executed in order to create a group to ensure proper evaluation and avoiding conflicts with parsing the coordinates, especially when using a syntax for polar points as described below.
+
 \begin{macrodef}
 |(|<a>|,|<b>|)|
 \end{macrodef}
@@ -400,10 +404,17 @@ Points on the path can be defined using x and y parts. The first item in the tup
 Points are per default defined as tuples representing the x- and y-coordinate. If floating-point numbers without unit are used, points are assumed per default. If other units are use, these are converted into points internally. The below alternative representations of points are as well calculated into the default tuple representation:
 
 \begin{macrodef}
+|(|<a>|>|<b>|)|
+|(|<a>|,|<b>|>|<c>|)|
+\end{macrodef}
+Points on the path can also be defined using radius and angle parts. The first item in the tuple is the radius and the second item is the angle. The first item can contain a comma to define two radii.
+
+
+\begin{macrodef}
 |(|<a>|:|<b>|)|
 |(|<a>|:|<b>|,|<c>|)|
 \end{macrodef}
-Points on the path can also be defined using angle and radius parts. The first item in the tuple is the angle, and the second item is the radius. The seocnd item can contain a comma to define two radii.
+Points on the path can also be defined using radius and angle parts in reversed order. The first item in the tuple is the angle, and the second item is the radius. The seocnd item can contain a comma to define two radii.
 
 \begin{macrodef}[macro:point]
 |(|<name>|)|
